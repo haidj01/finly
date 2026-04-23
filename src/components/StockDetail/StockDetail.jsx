@@ -3,14 +3,8 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { useStore } from '../../store/useStore'
-import { fetchSnapshot, fetchBars, fetchAsset, fetchNews, placeOrder } from '../../api/alpaca'
+import { fetchSnapshot, fetchBars, fetchNews, placeOrder } from '../../api/alpaca'
 import { fetchStrategies, createStrategy, toggleStrategy, deleteStrategy } from '../../api/strategy'
-
-const STRATEGY_TYPES = [
-  { value: 'stop_loss',     label: 'Stop Loss' },
-  { value: 'take_profit',   label: 'Take Profit' },
-  { value: 'price_target',  label: '목표가' },
-]
 
 function fmt(n, digits = 2) {
   if (n == null) return '—'
@@ -41,10 +35,15 @@ export default function StockDetail() {
   const [orderMsg, setOrderMsg]   = useState(null)
 
   // Strategy form
-  const [showForm, setShowForm]     = useState(false)
-  const [stratType, setStratType]   = useState('stop_loss')
-  const [stratPrice, setStratPrice] = useState('')
-  const [stratMsg, setStratMsg]     = useState(null)
+  const [showForm, setShowForm]         = useState(false)
+  const [stratType, setStratType]       = useState('stop_loss')
+  const [stratPct, setStratPct]         = useState('')        // stop_loss / take_profit
+  const [stratTarget, setStratTarget]   = useState('')        // price_target 달러
+  const [stratDirection, setStratDirection] = useState('above') // price_target 방향
+  const [stratSide, setStratSide]       = useState('sell')    // price_target 매수/매도
+  const [stratQtyType, setStratQtyType] = useState('shares')  // 'shares' | 'all'
+  const [stratQty, setStratQty]         = useState(1)
+  const [stratMsg, setStratMsg]         = useState(null)
 
   const inWatchlist = watchlist.some(w => w.sym === sym)
   const position    = positions.find(p => p.symbol === sym)
@@ -108,22 +107,64 @@ export default function StockDetail() {
     }
   }
 
+  function buildStratPayload() {
+    const name = `${sym}-${stratType}`.slice(0, 50)
+    if (stratType === 'stop_loss') {
+      return {
+        name, symbol: sym, type: 'stop_loss',
+        condition: { drop_pct: parseFloat(stratPct) },
+        action: {
+          side: 'sell', qty_type: stratQtyType,
+          ...(stratQtyType === 'shares' ? { qty: parseInt(stratQty) } : {}),
+        },
+      }
+    }
+    if (stratType === 'take_profit') {
+      return {
+        name, symbol: sym, type: 'take_profit',
+        condition: { gain_pct: parseFloat(stratPct) },
+        action: {
+          side: 'sell', qty_type: stratQtyType,
+          ...(stratQtyType === 'shares' ? { qty: parseInt(stratQty) } : {}),
+        },
+      }
+    }
+    return {
+      name, symbol: sym, type: 'price_target',
+      condition: { target_price: parseFloat(stratTarget), direction: stratDirection },
+      action: { side: stratSide, qty: parseInt(stratQty), qty_type: 'shares' },
+    }
+  }
+
   async function handleStratCreate(e) {
     e.preventDefault()
     setStratMsg(null)
     try {
-      const created = await createStrategy({
-        symbol: sym,
-        strategy_type: stratType,
-        price: parseFloat(stratPrice),
-      })
+      const created = await createStrategy(buildStratPayload())
       setStrategies(prev => [...prev, created])
-      setStratPrice('')
+      setStratPct('')
+      setStratTarget('')
       setShowForm(false)
       setStratMsg({ ok: true, text: '전략이 추가되었습니다.' })
     } catch (e) {
       setStratMsg({ ok: false, text: e.message })
     }
+  }
+
+  function stratConditionLabel(st) {
+    const c = st.condition ?? {}
+    const a = st.action ?? {}
+    const qtyStr = a.qty_type === 'all' ? '전량' : `${a.qty}주`
+    const sideStr = a.side === 'buy' ? '매수' : '매도'
+    if (st.type === 'stop_loss')
+      return { main: `손실 -${c.drop_pct}% 도달 시`, sub: `${qtyStr} 매도` }
+    if (st.type === 'take_profit')
+      return { main: `수익 +${c.gain_pct}% 도달 시`, sub: `${qtyStr} 매도` }
+    if (st.type === 'price_target') {
+      const dir = c.direction === 'above' ? '이상' : '이하'
+      return { main: `$${fmt(c.target_price)} ${dir} 시`, sub: `${qtyStr} ${sideStr}` }
+    }
+    return { main: st.type, sub: '' }
   }
 
   async function handleToggle(sid) {
@@ -332,33 +373,137 @@ export default function StockDetail() {
             </div>
 
             {showForm && (
-              <form onSubmit={handleStratCreate} className="mb-4 space-y-2">
-                <select
-                  value={stratType}
-                  onChange={e => setStratType(e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
-                >
-                  {STRATEGY_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
+              <form onSubmit={handleStratCreate} className="mb-4 space-y-2.5 border border-gray-100 rounded-xl p-3 bg-gray-50">
+                {/* 전략 타입 */}
+                <div className="flex gap-1.5">
+                  {[['stop_loss','Stop Loss'],['take_profit','Take Profit'],['price_target','목표가']].map(([v,l]) => (
+                    <button
+                      key={v} type="button"
+                      onClick={() => { setStratType(v); setStratQtyType('shares') }}
+                      className={`flex-1 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        stratType === v ? 'bg-accent text-white' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >{l}</button>
                   ))}
-                </select>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="가격 (USD)"
-                    value={stratPrice}
-                    onChange={e => setStratPrice(e.target.value)}
-                    required
-                    className="flex-1 border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 bg-accent text-white rounded-xl text-sm font-medium hover:bg-accent-dark transition-colors"
-                  >
-                    저장
-                  </button>
                 </div>
+
+                {/* stop_loss / take_profit: % 입력 */}
+                {(stratType === 'stop_loss' || stratType === 'take_profit') && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 w-16 flex-shrink-0">
+                        {stratType === 'stop_loss' ? '손실 %' : '수익 %'}
+                      </span>
+                      <div className="relative flex-1">
+                        <input
+                          type="number" step="0.1" min="0.1" max="100"
+                          placeholder="5.0"
+                          value={stratPct}
+                          onChange={e => setStratPct(e.target.value)}
+                          required
+                          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 pr-7 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-white"
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">%</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 w-16 flex-shrink-0">수량</span>
+                      <div className="flex gap-1.5 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => setStratQtyType('shares')}
+                          className={`flex-1 py-1 rounded-lg text-xs font-medium transition-colors ${
+                            stratQtyType === 'shares' ? 'bg-accent text-white' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >직접입력</button>
+                        <button
+                          type="button"
+                          onClick={() => setStratQtyType('all')}
+                          className={`flex-1 py-1 rounded-lg text-xs font-medium transition-colors ${
+                            stratQtyType === 'all' ? 'bg-accent text-white' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >전량</button>
+                      </div>
+                    </div>
+                    {stratQtyType === 'shares' && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 w-16 flex-shrink-0">주수</span>
+                        <input
+                          type="number" min="1" max="10000"
+                          value={stratQty}
+                          onChange={e => setStratQty(Math.max(1, parseInt(e.target.value) || 1))}
+                          required
+                          className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-white"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* price_target: 달러 + direction + 매수/매도 + 수량 */}
+                {stratType === 'price_target' && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 w-16 flex-shrink-0">목표가</span>
+                      <div className="relative flex-1">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">$</span>
+                        <input
+                          type="number" step="0.01" min="0.01"
+                          placeholder="150.00"
+                          value={stratTarget}
+                          onChange={e => setStratTarget(e.target.value)}
+                          required
+                          className="w-full border border-gray-200 rounded-lg px-3 py-1.5 pl-6 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-white"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 w-16 flex-shrink-0">방향</span>
+                      <div className="flex gap-1.5 flex-1">
+                        {[['above','이상 (≥)'],['below','이하 (≤)']].map(([v,l]) => (
+                          <button key={v} type="button"
+                            onClick={() => setStratDirection(v)}
+                            className={`flex-1 py-1 rounded-lg text-xs font-medium transition-colors ${
+                              stratDirection === v ? 'bg-accent text-white' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-100'
+                            }`}
+                          >{l}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 w-16 flex-shrink-0">주문</span>
+                      <div className="flex gap-1.5 flex-1">
+                        <button type="button" onClick={() => setStratSide('buy')}
+                          className={`flex-1 py-1 rounded-lg text-xs font-medium transition-colors ${
+                            stratSide === 'buy' ? 'bg-accent text-white' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >매수</button>
+                        <button type="button" onClick={() => setStratSide('sell')}
+                          className={`flex-1 py-1 rounded-lg text-xs font-medium transition-colors ${
+                            stratSide === 'sell' ? 'bg-red-500 text-white' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >매도</button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 w-16 flex-shrink-0">수량</span>
+                      <input
+                        type="number" min="1" max="10000"
+                        value={stratQty}
+                        onChange={e => setStratQty(Math.max(1, parseInt(e.target.value) || 1))}
+                        required
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-white"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-1.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-dark transition-colors"
+                >
+                  전략 저장
+                </button>
               </form>
             )}
 
@@ -372,32 +517,31 @@ export default function StockDetail() {
               <p className="text-xs text-gray-400">등록된 전략 없음</p>
             ) : (
               <div className="space-y-2">
-                {strategies.map(st => (
-                  <div key={st.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
-                    <div>
-                      <div className="text-xs font-semibold text-gray-700">
-                        {STRATEGY_TYPES.find(t => t.value === st.strategy_type)?.label ?? st.strategy_type}
+                {strategies.map(st => {
+                  const { main, sub } = stratConditionLabel(st)
+                  return (
+                    <div key={st.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
+                      <div>
+                        <div className="text-xs font-semibold text-gray-700">{main}</div>
+                        <div className="text-[11px] text-gray-400">{sub}</div>
                       </div>
-                      <div className="text-[11px] text-gray-400">${fmt(st.price)}</div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggle(st.id)}
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium transition-colors ${
+                            st.enabled ? 'bg-accent-light text-accent-dark' : 'bg-gray-200 text-gray-500'
+                          }`}
+                        >
+                          {st.enabled ? 'ON' : 'OFF'}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(st.id)}
+                          className="text-gray-300 hover:text-red-500 transition-colors text-base leading-none"
+                        >×</button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleToggle(st.id)}
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium transition-colors ${
-                          st.enabled
-                            ? 'bg-accent-light text-accent-dark'
-                            : 'bg-gray-200 text-gray-500'
-                        }`}
-                      >
-                        {st.enabled ? 'ON' : 'OFF'}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(st.id)}
-                        className="text-gray-300 hover:text-red-500 transition-colors text-base leading-none"
-                      >×</button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

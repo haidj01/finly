@@ -13,7 +13,7 @@ export async function createStrategy(body) {
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.detail || '전략 생성 실패')
-  return data
+  return data.strategy ?? data
 }
 
 export async function toggleStrategy(sid) {
