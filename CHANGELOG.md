@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/haidj01/finly/compare/finly-v0.3.0...finly-v0.3.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* show error message on AI signal refresh failure ([b5f584a](https://github.com/haidj01/finly/commit/b5f584a4b78be54f4f9ed2ec2b3726fd105e8f20))
+
 ## [0.3.0](https://github.com/haidj01/finly/compare/finly-v0.2.0...finly-v0.3.0) (2026-04-23)
 
 
