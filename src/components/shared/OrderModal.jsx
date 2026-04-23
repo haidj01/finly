@@ -1,9 +1,7 @@
 import React, { useState } from 'react'
-import { useStore } from '../../store/useStore'
 import { placeOrder } from '../../api/alpaca'
 
 export default function OrderModal({ order, onClose }) {
-  const { alpacaKey, alpacaSecret } = useStore()
   const [qty, setQty] = useState(1)
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -14,7 +12,7 @@ export default function OrderModal({ order, onClose }) {
   const execute = async () => {
     setLoading(true)
     try {
-      await placeOrder(alpacaKey, alpacaSecret, { symbol: order.sym, qty, side: order.side })
+      await placeOrder({ symbol: order.sym, qty, side: order.side })
       setStatus({ ok: true, msg: `✅ ${order.sym} ${qty}주 ${isBuy ? '매수' : '매도'} 주문이 접수됐습니다!` })
     } catch (e) {
       setStatus({ ok: false, msg: `❌ 오류: ${e.message}` })
@@ -40,8 +38,9 @@ export default function OrderModal({ order, onClose }) {
           <input
             type="number"
             min={1}
+            max={10000}
             value={qty}
-            onChange={e => setQty(Math.max(1, parseInt(e.target.value) || 1))}
+            onChange={e => setQty(Math.min(10000, Math.max(1, parseInt(e.target.value) || 1)))}
             className="w-20 text-center font-mono font-bold text-lg bg-gray-50 border-2 border-gray-200 rounded-xl py-2 outline-none focus:border-accent"
           />
           <span className="text-sm text-gray-400">주</span>

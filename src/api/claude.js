@@ -1,46 +1,34 @@
-const API_URL = 'https://api.anthropic.com/v1/messages'
+import { apiFetch } from './client'
 
-export async function sendMessage(apiKey, messages, systemPrompt) {
-  const res = await fetch(API_URL, {
+export async function sendMessage(messages, systemPrompt) {
+  const res = await apiFetch('/api/claude/chat', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: systemPrompt,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages
-    })
+    body: JSON.stringify({ messages, system: systemPrompt }),
   })
   const data = await res.json()
-  if (!res.ok) throw new Error(data.error?.message || 'Claude API 오류')
+  if (!res.ok) throw new Error(data.detail || 'Claude API 오류')
   return data
 }
 
-export async function searchTicker(apiKey, query) {
-  const res = await fetch(API_URL, {
+export async function fetchSignals(symbols) {
+  const res = await apiFetch('/api/claude/signals', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 200,
-      messages: [{
-        role: 'user',
-        content: `"${query}"와 관련된 미국 상장 주식 티커를 최대 5개 찾아줘. JSON 배열만 반환해. 형식: [{"sym":"AAPL","name":"Apple Inc."},...]`
-      }]
-    })
+    body: JSON.stringify({ symbols }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || `오류 ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function searchTicker(query) {
+  const res = await apiFetch('/api/claude/search-ticker', {
+    method: 'POST',
+    body: JSON.stringify({ query }),
   })
   const data = await res.json()
+  if (!res.ok) return []
   const text = data.content?.find(b => b.type === 'text')?.text || '[]'
   try {
     return JSON.parse(text.replace(/```json|```/g, '').trim())

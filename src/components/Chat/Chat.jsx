@@ -7,7 +7,7 @@ import ActionCard from './ActionCard'
 const CHIPS = ['AAPL 분석해줘', 'NVDA 매수해도 될까?', '내 포트폴리오 평가해줘', '오늘 시장 시황', 'S&P500 전망은?', '리스크 분석']
 
 export default function Chat() {
-  const { claudeKey, chatHistory, addChatMsg, positions, alpacaKey } = useStore()
+  const { chatHistory, addChatMsg, positions } = useStore()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [apiMessages, setApiMessages] = useState([])
@@ -38,10 +38,6 @@ export default function Chat() {
   const send = async (text) => {
     const msg = text || input.trim()
     if (!msg || loading) return
-    if (!claudeKey) {
-      addChatMsg({ role: 'ai', text: '⚠️ Claude API Key가 설정되지 않았습니다.\n우측 상단 ⚙️ 설정에서 입력해주세요.' })
-      return
-    }
 
     addChatMsg({ role: 'user', text: msg })
     setInput('')
@@ -52,11 +48,10 @@ export default function Chat() {
     setApiMessages(newApiMsgs)
 
     try {
-      const data = await sendMessage(claudeKey, newApiMsgs, buildSystem())
+      const data = await sendMessage(newApiMsgs, buildSystem())
       const reply = data.content.filter(b => b.type === 'text').map(b => b.text).join('')
       setApiMessages(prev => [...prev, { role: 'assistant', content: data.content }])
 
-      // detect ticker & recommendation
       const isBuy  = /매수|BUY/i.test(reply)
       const isSell = /매도|SELL/i.test(reply)
       const tm     = reply.match(/\b([A-Z]{2,5})\b/)
@@ -90,7 +85,6 @@ export default function Chat() {
               <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm text-sm leading-relaxed">
                 안녕하세요! 👋 저는 <strong>Finly AI Agent</strong>입니다.<br /><br />
                 실시간 웹검색으로 주가와 뉴스를 조회하고, 종목 분석과 <strong>BUY / SELL / HOLD</strong> 추천을 제공합니다.<br /><br />
-                {alpacaKey ? '✅ Alpaca 연결됨 — AI 추천 종목을 바로 주문할 수 있어요!' : '⚙️ Alpaca API를 연결하면 AI 추천 종목을 바로 주문할 수 있습니다.'}<br /><br />
                 무엇이든 물어보세요! 📈
               </div>
               <div className="text-xs text-gray-300 mt-1 px-1">{new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>
@@ -101,9 +95,7 @@ export default function Chat() {
         {chatHistory.map((msg, i) => (
           <div key={i}>
             <ChatMessage msg={msg} />
-            {msg.action && alpacaKey && (
-              <ActionCard action={msg.action} />
-            )}
+            {msg.action && <ActionCard action={msg.action} />}
           </div>
         ))}
 
