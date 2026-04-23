@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0](https://github.com/haidj01/finly/compare/finly-v0.2.0...finly-v0.3.0) (2026-04-23)
+
+
+### Features
+
+* add 종목 조회 tab with stock detail, chart, orders, and strategies ([923038c](https://github.com/haidj01/finly/commit/923038cf1fcfe8205fae6f231b03464346b8b1eb))
+* 종목 조회 탭 — 차트, 주문, 전략 설정 ([ddc0ab6](https://github.com/haidj01/finly/commit/ddc0ab6d882bbfe2307de52bd8eb29f99ce34939))
+
+
+### Bug Fixes
+
+* fetch version from /api/version for CloudFront routing ([9dca52e](https://github.com/haidj01/finly/commit/9dca52e746f9b00915435eaaeef80d7a49e557b5))
+* read agent version from backend /version response ([40e326f](https://github.com/haidj01/finly/commit/40e326fc33c749219b0aeec3fdf19fef7801f558))
+
 ## [0.2.0](https://github.com/haidj01/finly/compare/finly-v0.1.0...finly-v0.2.0) (2026-04-23)
 
 
