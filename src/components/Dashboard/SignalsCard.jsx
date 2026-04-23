@@ -59,7 +59,15 @@ export default function SignalsCard() {
       )}
 
       {error && (
-        <div className="text-sm text-red-400 py-4 text-center">{error}</div>
+        <div className="flex flex-col items-center gap-2 py-4">
+          <div className="text-sm text-red-400 text-center">{error}</div>
+          <button
+            onClick={load}
+            className="text-xs px-3 py-1 rounded-lg border border-red-200 text-red-400 hover:border-red-400 transition-all"
+          >
+            ↻ 재시도
+          </button>
+        </div>
       )}
 
       {!loading && !error && signals.length === 0 && (
