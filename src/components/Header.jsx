@@ -1,5 +1,6 @@
 import React from 'react'
 import { useStore } from '../store/useStore'
+import { useVersions } from '../hooks/useVersions'
 
 function useMarket() {
   const [open, setOpen] = React.useState(false)
@@ -25,6 +26,7 @@ const TABS = [
 export default function Header() {
   const { view, setView } = useStore()
   const marketOpen = useMarket()
+  const versions = useVersions()
 
   return (
     <header className="flex items-center justify-between px-6 h-[58px] bg-white border-b border-gray-200 flex-shrink-0 shadow-sm z-10">
@@ -47,6 +49,14 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2.5">
+        <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-gray-300 font-mono">
+          <span title="frontend">fe:{versions.frontend}</span>
+          <span>·</span>
+          <span title="backend">be:{versions.backend ?? '…'}</span>
+          <span>·</span>
+          <span title="agent">ag:{versions.agent ?? '…'}</span>
+        </div>
+
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
           marketOpen ? 'bg-accent-light text-accent-dark' : 'bg-red-50 text-red-400'
         }`}>
