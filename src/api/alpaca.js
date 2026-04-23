@@ -36,6 +36,18 @@ export async function fetchNews(symbols) {
   return res.json()
 }
 
+export async function fetchSnapshot(sym) {
+  const res = await apiFetch(`/api/alpaca/snapshot/${sym}`)
+  if (!res.ok) throw new Error('Snapshot fetch failed')
+  return res.json()
+}
+
+export async function fetchBars(sym, limit = 60) {
+  const res = await apiFetch(`/api/alpaca/bars/${sym}?limit=${limit}`)
+  if (!res.ok) throw new Error('Bars fetch failed')
+  return res.json()
+}
+
 export async function placeOrder({ symbol, qty, side }) {
   const res = await apiFetch('/api/alpaca/orders', {
     method: 'POST',

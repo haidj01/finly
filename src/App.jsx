@@ -7,6 +7,7 @@ import Trending from './components/Trending/Trending'
 import Chat from './components/Chat/Chat'
 import LoginPage from './components/Login/LoginPage'
 import MFAPage from './components/Login/MFAPage'
+import StockDetail from './components/StockDetail/StockDetail'
 
 export default function App() {
   const { view, isAuthenticated, authStep, logout } = useStore()
@@ -30,6 +31,7 @@ export default function App() {
         <main className="flex-1 flex flex-col overflow-hidden">
           {view === 'dashboard' && <Dashboard />}
           {view === 'trending'  && <Trending />}
+          {view === 'stock'     && <StockDetail />}
           {view === 'chat'      && <Chat />}
         </main>
       </div>

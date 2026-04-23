@@ -3,11 +3,13 @@ import { useStore } from '../../store/useStore'
 
 export default function WatchlistItem({ item }) {
   const removeWatch = useStore(s => s.removeWatch)
+  const setSelectedSymbol = useStore(s => s.setSelectedSymbol)
   const [hover, setHover] = useState(false)
 
   return (
     <div
       className="flex justify-between items-center px-2 py-2.5 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors group"
+      onClick={() => setSelectedSymbol(item.sym)}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
@@ -29,7 +31,7 @@ export default function WatchlistItem({ item }) {
         </div>
         {hover && (
           <button
-            onClick={() => removeWatch(item.sym)}
+            onClick={(e) => { e.stopPropagation(); removeWatch(item.sym) }}
             className="text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-md px-1 py-0.5 text-base leading-none transition-all"
           >×</button>
         )}
