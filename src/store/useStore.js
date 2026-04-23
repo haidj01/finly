@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { saveToken, clearToken, getToken } from '../api/client'
 
 const DEFAULT_WATCHLIST = [
   { sym: 'AAPL', co: 'Apple',     price: 213.49, chg: 1.24,  up: true  },
@@ -11,19 +12,27 @@ const DEFAULT_WATCHLIST = [
 
 export const useStore = create(
   persist(
-    (set, get) => ({
-      // API Keys
-      claudeKey: '',
-      alpacaKey: '',
-      alpacaSecret: '',
-      setKeys: (claudeKey, alpacaKey, alpacaSecret) =>
-        set({ claudeKey, alpacaKey, alpacaSecret }),
+    (set) => ({
+      // ── Auth ────────────────────────────────────────────────
+      isAuthenticated: !!getToken(),
+      authStep: 'login',   // 'login' | 'mfa'
+      tempToken: null,
 
-      // View
-      view: 'dashboard',
+      setTempToken: (tempToken) => set({ tempToken, authStep: 'mfa' }),
+      setToken: (token) => {
+        saveToken(token)
+        set({ isAuthenticated: true, authStep: 'login', tempToken: null })
+      },
+      logout: () => {
+        clearToken()
+        set({ isAuthenticated: false, authStep: 'login', tempToken: null })
+      },
+
+      // ── View ────────────────────────────────────────────────
+      view: 'dashboard',  // 'dashboard' | 'trending' | 'chat'
       setView: (view) => set({ view }),
 
-      // Watchlist
+      // ── Watchlist ───────────────────────────────────────────
       watchlist: DEFAULT_WATCHLIST,
       addWatch: (item) => set((s) => ({ watchlist: [...s.watchlist, item] })),
       removeWatch: (sym) => set((s) => ({ watchlist: s.watchlist.filter(w => w.sym !== sym) })),
@@ -38,27 +47,24 @@ export const useStore = create(
         )
       })),
 
-      // Alpaca Account
+      // ── Alpaca ──────────────────────────────────────────────
       alpacaAccount: null,
       setAlpacaAccount: (alpacaAccount) => set({ alpacaAccount }),
 
-      // Alpaca Positions (portfolio)
       positions: [],
       setPositions: (positions) => set({ positions }),
 
-      // Chat
+      orders: [],
+      setOrders: (orders) => set({ orders }),
+
+      // ── Chat ────────────────────────────────────────────────
       chatHistory: [],
       addChatMsg: (msg) => set((s) => ({ chatHistory: [...s.chatHistory, msg] })),
       clearChat: () => set({ chatHistory: [] }),
     }),
     {
       name: 'finly-store',
-      partialState: (state) => ({
-        claudeKey: state.claudeKey,
-        alpacaKey: state.alpacaKey,
-        alpacaSecret: state.alpacaSecret,
-        watchlist: state.watchlist,
-      })
+      partialize: (state) => ({ watchlist: state.watchlist }),
     }
   )
 )

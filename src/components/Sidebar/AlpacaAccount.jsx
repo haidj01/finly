@@ -3,15 +3,15 @@ import { useStore } from '../../store/useStore'
 import { useAlpacaRefresh } from '../../hooks/useAlpacaRefresh'
 
 export default function AlpacaAccount() {
-  const { alpacaAccount, alpacaKey } = useStore()
+  const { alpacaAccount } = useStore()
   const { refresh } = useAlpacaRefresh()
 
-  const equity   = alpacaAccount ? parseFloat(alpacaAccount.equity) : 0
-  const lastEq   = alpacaAccount ? parseFloat(alpacaAccount.last_equity) : 0
-  const cash     = alpacaAccount ? parseFloat(alpacaAccount.cash) : 0
-  const buyPow   = alpacaAccount ? parseFloat(alpacaAccount.buying_power) : 0
-  const dayPnl   = equity - lastEq
-  const dayPct   = lastEq ? (dayPnl / lastEq * 100) : 0
+  const equity = alpacaAccount ? parseFloat(alpacaAccount.equity) : 0
+  const lastEq = alpacaAccount ? parseFloat(alpacaAccount.last_equity) : 0
+  const cash   = alpacaAccount ? parseFloat(alpacaAccount.cash) : 0
+  const buyPow = alpacaAccount ? parseFloat(alpacaAccount.buying_power) : 0
+  const dayPnl = equity - lastEq
+  const dayPct = lastEq ? (dayPnl / lastEq * 100) : 0
 
   return (
     <div className="p-4 border-b border-gray-200">
@@ -23,9 +23,7 @@ export default function AlpacaAccount() {
         >↻</button>
       </div>
 
-      {!alpacaKey ? (
-        <div className="text-xs text-gray-400 py-2">⚙️ Alpaca API 연결 후 표시됩니다.</div>
-      ) : !alpacaAccount ? (
+      {!alpacaAccount ? (
         <div className="text-xs text-gray-400 py-2">로딩 중...</div>
       ) : (
         <>

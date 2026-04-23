@@ -6,7 +6,7 @@ import WatchlistItem from './WatchlistItem'
 import AlpacaAccount from './AlpacaAccount'
 
 export default function Sidebar() {
-  const { watchlist, addWatch, alpacaKey, alpacaSecret, claudeKey } = useStore()
+  const { watchlist, addWatch } = useStore()
   const [showModal, setShowModal] = useState(false)
   const [sym, setSym] = useState('')
   const [name, setName] = useState('')
@@ -25,9 +25,8 @@ export default function Sidebar() {
   }
 
   const lookupTicker = async (s) => {
-    if (!alpacaKey) return
     setSymStatus('검색 중...')
-    const asset = await fetchAsset(alpacaKey, alpacaSecret, s)
+    const asset = await fetchAsset(s)
     if (asset) {
       setName(asset.name || s)
       setSymStatus('✓ 확인됨')
@@ -45,9 +44,8 @@ export default function Sidebar() {
   }
 
   const searchName = async (q) => {
-    if (!claudeKey) return
     setNameStatus('검색 중...')
-    const res = await searchTicker(claudeKey, q)
+    const res = await searchTicker(q)
     setResults(res)
     setNameStatus(res.length ? `${res.length}개 발견` : '결과 없음')
   }
@@ -59,11 +57,8 @@ export default function Sidebar() {
 
   const confirmAdd = async () => {
     if (!sym) return
-    let price = 0
-    if (alpacaKey) {
-      const prices = await fetchLatestPrices(alpacaKey, alpacaSecret, [sym]).catch(() => ({}))
-      price = prices[sym] || 0
-    }
+    const prices = await fetchLatestPrices([sym]).catch(() => ({}))
+    const price = prices[sym] || 0
     addWatch({ sym, co: name || sym, price, chg: 0, up: true })
     setShowModal(false)
     setSym(''); setName(''); setResults([])
