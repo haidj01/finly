@@ -20,6 +20,7 @@ function useMarket() {
 const TABS = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'trending',  label: '주목 종목' },
+  { key: 'stock',     label: '종목 조회' },
   { key: 'chat',      label: 'AI Agent' },
 ]
 

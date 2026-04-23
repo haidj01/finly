@@ -10,7 +10,7 @@ export function useVersions() {
   useEffect(() => {
     const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
-    fetch(`${BASE}/version`)
+    fetch(`${BASE}/api/version`)
       .then(r => r.json())
       .then(data => {
         setVersions(prev => ({

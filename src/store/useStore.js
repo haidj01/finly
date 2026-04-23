@@ -29,8 +29,12 @@ export const useStore = create(
       },
 
       // ── View ────────────────────────────────────────────────
-      view: 'dashboard',  // 'dashboard' | 'trending' | 'chat'
+      view: 'dashboard',  // 'dashboard' | 'trending' | 'chat' | 'stock'
       setView: (view) => set({ view }),
+
+      // ── Stock Detail ─────────────────────────────────────────
+      selectedSymbol: null,
+      setSelectedSymbol: (sym) => set({ selectedSymbol: sym, view: 'stock' }),
 
       // ── Watchlist ───────────────────────────────────────────
       watchlist: DEFAULT_WATCHLIST,
