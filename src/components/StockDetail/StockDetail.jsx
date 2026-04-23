@@ -70,6 +70,14 @@ export default function StockDetail() {
     }
   }, [])
 
+  // Watchlist 클릭 등 외부에서 selectedSymbol이 바뀌면 로컬 sym에 동기화
+  useEffect(() => {
+    if (selectedSymbol && selectedSymbol !== sym) {
+      setInput(selectedSymbol)
+      setSym(selectedSymbol)
+    }
+  }, [selectedSymbol])
+
   useEffect(() => {
     if (sym) load(sym)
   }, [sym, load])
