@@ -17,7 +17,10 @@ export async function fetchSignals(symbols) {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.detail || `오류 ${res.status}`)
+    const detail = err.detail
+    const msg = typeof detail === 'string' ? detail
+      : detail?.error?.message ?? `분석 서버 오류 (${res.status})`
+    throw new Error(msg)
   }
   return res.json()
 }
