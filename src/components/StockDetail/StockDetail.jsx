@@ -62,7 +62,11 @@ export default function StockDetail() {
       ])
       setSnap(snapData)
       setBars(barsData.map(b => ({ date: fmtDate(b.t), close: +b.c.toFixed(2) })))
-      setNews(newsData.slice(0, 5))
+      const allNews = [
+        ...(newsData?.alpaca?.items ?? []),
+        ...(newsData?.google?.items ?? []),
+      ].sort((a, b) => (b.time > a.time ? 1 : -1)).slice(0, 5)
+      setNews(allNews)
       setStrategies(stratData.filter(st => st.symbol === s))
     } catch (e) {
       setError(e.message)
@@ -415,19 +419,12 @@ export default function StockDetail() {
                     rel="noopener noreferrer"
                     className="flex gap-3 group"
                   >
-                    {n.images?.[0]?.url && (
-                      <img
-                        src={n.images[0].url}
-                        alt=""
-                        className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
-                      />
-                    )}
                     <div>
                       <div className="text-sm font-medium text-gray-800 group-hover:text-accent-dark line-clamp-2 transition-colors">
-                        {n.headline}
+                        {n.hl_ko || n.hl}
                       </div>
                       <div className="text-[11px] text-gray-400 mt-0.5">
-                        {n.source} · {fmtDate(n.created_at)}
+                        {n.source} · {fmtDate(n.time)}
                       </div>
                     </div>
                   </a>
