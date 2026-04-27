@@ -41,10 +41,13 @@ export default function StockDetail() {
   const [orderMsg, setOrderMsg]   = useState(null)
 
   // Strategy form
-  const [showForm, setShowForm]     = useState(false)
-  const [stratType, setStratType]   = useState('stop_loss')
-  const [stratPrice, setStratPrice] = useState('')
-  const [stratMsg, setStratMsg]     = useState(null)
+  const [showForm, setShowForm]   = useState(false)
+  const [stratType, setStratType] = useState('stop_loss')
+  const [stratVal, setStratVal]   = useState('')        // drop_pct / gain_pct / target_price
+  const [stratDir, setStratDir]   = useState('above')  // price_target direction
+  const [stratSide, setStratSide] = useState('buy')     // price_target action side
+  const [stratQty, setStratQty]   = useState(1)         // price_target qty
+  const [stratMsg, setStratMsg]   = useState(null)
 
   const inWatchlist = watchlist.some(w => w.sym === sym)
   const position    = positions.find(p => p.symbol === sym)
@@ -115,14 +118,27 @@ export default function StockDetail() {
   async function handleStratCreate(e) {
     e.preventDefault()
     setStratMsg(null)
+    const val = parseFloat(stratVal)
+
+    let condition, action, name
+    if (stratType === 'stop_loss') {
+      condition = { drop_pct: val }
+      action    = { side: 'sell', qty_type: 'all' }
+      name      = `${sym} Stop Loss ${val}%`
+    } else if (stratType === 'take_profit') {
+      condition = { gain_pct: val }
+      action    = { side: 'sell', qty_type: 'all' }
+      name      = `${sym} Take Profit ${val}%`
+    } else {
+      condition = { target_price: val, direction: stratDir }
+      action    = { side: stratSide, qty: stratQty, qty_type: 'shares' }
+      name      = `${sym} ${stratDir === 'above' ? '↑' : '↓'}$${val} ${stratSide}`
+    }
+
     try {
-      const created = await createStrategy({
-        symbol: sym,
-        strategy_type: stratType,
-        price: parseFloat(stratPrice),
-      })
+      const created = await createStrategy({ name, symbol: sym, type: stratType, condition, action })
       setStrategies(prev => [...prev, created])
-      setStratPrice('')
+      setStratVal('')
       setShowForm(false)
       setStratMsg({ ok: true, text: '전략이 추가되었습니다.' })
     } catch (e) {
@@ -339,30 +355,51 @@ export default function StockDetail() {
               <form onSubmit={handleStratCreate} className="mb-4 space-y-2">
                 <select
                   value={stratType}
-                  onChange={e => setStratType(e.target.value)}
+                  onChange={e => { setStratType(e.target.value); setStratVal('') }}
                   className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
                 >
                   {STRATEGY_TYPES.map(t => (
                     <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
                 </select>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="가격 (USD)"
-                    value={stratPrice}
-                    onChange={e => setStratPrice(e.target.value)}
-                    required
-                    className="flex-1 border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 bg-accent text-white rounded-xl text-sm font-medium hover:bg-accent-dark transition-colors"
-                  >
-                    저장
-                  </button>
-                </div>
+
+                {stratType === 'stop_loss' && (
+                  <input type="number" step="0.1" min="0.1" placeholder="손실 임계값 (%)" value={stratVal}
+                    onChange={e => setStratVal(e.target.value)} required
+                    className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                )}
+                {stratType === 'take_profit' && (
+                  <input type="number" step="0.1" min="0.1" placeholder="수익 목표 (%)" value={stratVal}
+                    onChange={e => setStratVal(e.target.value)} required
+                    className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                )}
+                {stratType === 'price_target' && (
+                  <>
+                    <input type="number" step="0.01" min="0.01" placeholder="목표 가격 (USD)" value={stratVal}
+                      onChange={e => setStratVal(e.target.value)} required
+                      className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                    <div className="flex gap-2">
+                      <select value={stratDir} onChange={e => setStratDir(e.target.value)}
+                        className="flex-1 border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                        <option value="above">이상 (above)</option>
+                        <option value="below">이하 (below)</option>
+                      </select>
+                      <select value={stratSide} onChange={e => setStratSide(e.target.value)}
+                        className="flex-1 border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                        <option value="buy">매수</option>
+                        <option value="sell">매도</option>
+                      </select>
+                      <input type="number" min="1" max="10000" value={stratQty}
+                        onChange={e => setStratQty(parseInt(e.target.value) || 1)}
+                        className="w-16 border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                    </div>
+                  </>
+                )}
+
+                <button type="submit"
+                  className="w-full py-1.5 bg-accent text-white rounded-xl text-sm font-medium hover:bg-accent-dark transition-colors">
+                  저장
+                </button>
               </form>
             )}
 
@@ -379,10 +416,10 @@ export default function StockDetail() {
                 {strategies.map(st => (
                   <div key={st.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
                     <div>
-                      <div className="text-xs font-semibold text-gray-700">
-                        {STRATEGY_TYPES.find(t => t.value === st.strategy_type)?.label ?? st.strategy_type}
+                      <div className="text-xs font-semibold text-gray-700">{st.name}</div>
+                      <div className="text-[11px] text-gray-400">
+                        {STRATEGY_TYPES.find(t => t.value === st.type)?.label ?? st.type}
                       </div>
-                      <div className="text-[11px] text-gray-400">${fmt(st.price)}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
