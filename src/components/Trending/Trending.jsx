@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { useStore } from '../../store/useStore'
-import { fetchLatestPrices, placeOrder } from '../../api/alpaca'
+import { fetchLatestPrices, placeOrder, fetchAsset } from '../../api/alpaca'
 import OrderModal from '../shared/OrderModal'
 import { apiFetch } from '../../api/client'
 
@@ -27,9 +27,10 @@ function StockCard({ stock, onOrder }) {
   const isWatching = watchlist.some(w => w.sym === stock.sym)
   const isUp = stock.chg_pct >= 0
 
-  const handleAddWatch = () => {
+  const handleAddWatch = async () => {
     if (isWatching) return
-    addWatch({ sym: stock.sym, co: stock.sym, price: stock.price, chg: stock.change, up: isUp })
+    const asset = await fetchAsset(stock.sym)
+    addWatch({ sym: stock.sym, co: asset?.name || stock.sym, price: stock.price, chg: stock.chg_pct, up: isUp })
   }
 
   return (
@@ -49,14 +50,12 @@ function StockCard({ stock, onOrder }) {
         </div>
       </div>
 
-      {stock.reason && (
-        <div className="text-xs text-gray-500 mb-3 leading-relaxed border-l-2 border-gray-200 pl-2">
-          {stock.reason}
-        </div>
-      )}
-      {!stock.reason && (
-        <div className="h-4 bg-gray-100 rounded animate-pulse mb-3" />
-      )}
+      <div className="text-xs mb-3 leading-relaxed border-l-2 border-gray-200 pl-2">
+        {stock.reason
+          ? <span className="text-gray-500">{stock.reason}</span>
+          : <span className="text-gray-300">-</span>
+        }
+      </div>
 
       <div className="text-xs text-gray-300 mb-3">
         거래량 {stock.volume > 0 ? (stock.volume / 1_000_000).toFixed(1) + 'M' : '-'}
