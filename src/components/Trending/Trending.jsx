@@ -10,6 +10,19 @@ async function fetchTrending() {
   return res.json()
 }
 
+const GRADE_CLS = {
+  A: 'bg-green-50 text-green-600',
+  B: 'bg-blue-50 text-blue-500',
+  C: 'bg-yellow-50 text-yellow-600',
+  D: 'bg-red-50 text-red-500',
+}
+
+const ANALYST_CLS = {
+  '매수': 'text-accent-dark',
+  '중립': 'text-yellow-600',
+  '매도': 'text-red-500',
+}
+
 const CATEGORY = {
   most_active: { label: '거래량 급등', cls: 'bg-blue-50 text-blue-500' },
   gainer:      { label: '상승 상위',   cls: 'bg-accent-light text-accent-dark' },
@@ -23,8 +36,9 @@ const SECTION = [
 ]
 
 function StockCard({ stock, onOrder }) {
-  const { addWatch, watchlist } = useStore()
+  const { addWatch, watchlist, positions } = useStore()
   const isWatching = watchlist.some(w => w.sym === stock.sym)
+  const isHolding  = positions.some(p => p.symbol === stock.sym)
   const isUp = stock.chg_pct >= 0
 
   const handleAddWatch = async () => {
@@ -41,7 +55,12 @@ function StockCard({ stock, onOrder }) {
             {stock.sym.slice(0, 3)}
           </div>
           <div>
-            <div className="text-sm font-bold">{stock.sym}</div>
+            <div className="flex items-center gap-1.5">
+              <div className="text-sm font-bold">{stock.sym}</div>
+              {isHolding && (
+                <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-500 font-semibold">보유</span>
+              )}
+            </div>
             <div className="text-xs text-gray-400">${stock.price.toFixed(2)}</div>
           </div>
         </div>
@@ -57,8 +76,24 @@ function StockCard({ stock, onOrder }) {
         }
       </div>
 
-      <div className="text-xs text-gray-300 mb-3">
-        거래량 {stock.volume > 0 ? (stock.volume / 1_000_000).toFixed(1) + 'M' : '-'}
+      <div className="flex flex-wrap items-center gap-1.5 mb-3">
+        {stock.grade && (
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${GRADE_CLS[stock.grade] || 'bg-gray-100 text-gray-400'}`}>
+            {stock.grade}
+          </span>
+        )}
+        {stock.pe != null && (
+          <span className="text-[10px] text-gray-400">PER {stock.pe}</span>
+        )}
+        {stock.analyst && (
+          <span className={`text-[10px] font-semibold ${ANALYST_CLS[stock.analyst] || 'text-gray-400'}`}>{stock.analyst}</span>
+        )}
+        {stock.growth && (
+          <span className="text-[10px] text-gray-400">성장 {stock.growth}</span>
+        )}
+        {!stock.grade && stock.pe == null && !stock.analyst && !stock.growth && (
+          <span className="text-[10px] text-gray-300">거래량 {stock.volume > 0 ? (stock.volume / 1_000_000).toFixed(1) + 'M' : '-'}</span>
+        )}
       </div>
 
       <div className="flex gap-1.5">
