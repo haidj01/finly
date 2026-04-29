@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.2](https://github.com/haidj01/finly/compare/finly-v0.3.1...finly-v0.3.2) (2026-04-29)
+
+
+### Bug Fixes
+
+* align strategy form payload with backend CreateStrategyRequest schema ([004e19e](https://github.com/haidj01/finly/commit/004e19eb85e0ea251673257aacbe31e50e965bab))
+* align strategy form payload with backend schema ([b3efb4e](https://github.com/haidj01/finly/commit/b3efb4efde9687e7c480fa102777055a50ec4b51))
+* fix trending watchlist add bugs and improve UX ([44297d9](https://github.com/haidj01/finly/commit/44297d9461a7ec64c27b211a8776419d8f10ff8e))
+* trending watchlist add bugs and UX improvements ([e3f8ba2](https://github.com/haidj01/finly/commit/e3f8ba2e32129346c36855f6adc2e07a3f1b035a))
+
 ## [0.3.1](https://github.com/haidj01/finly/compare/finly-v0.3.0...finly-v0.3.1) (2026-04-23)
 
 
