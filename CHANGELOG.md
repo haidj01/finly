@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/haidj01/finly/compare/finly-v0.3.2...finly-v0.4.0) (2026-04-29)
+
+
+### Features
+
+* **trending:** display PE, analyst rating, growth, grade badges on stock cards ([b6fc20b](https://github.com/haidj01/finly/commit/b6fc20bc08eb1f153520d0d72aaff1a2392cf634))
+* **trending:** show grade badge, PE, analyst rating, growth on stock cards ([de50906](https://github.com/haidj01/finly/commit/de509060ff82218c465c0fdd0e7b6c876bd0afa4))
+* 주목종목 자동 새로고침 + 상세 로딩 UI 추가 ([4e1805f](https://github.com/haidj01/finly/commit/4e1805f1cda403695f7d74ba8a706f433faadf0a))
+
+
+### Bug Fixes
+
+* handle CloudFront SPA fallback returning HTML for API 404 errors ([2fbe497](https://github.com/haidj01/finly/commit/2fbe497bbe6f6c3833a9978e2563169ff0c51292))
+
 ## [0.3.2](https://github.com/haidj01/finly/compare/finly-v0.3.1...finly-v0.3.2) (2026-04-29)
 
 
