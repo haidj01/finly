@@ -24,5 +24,15 @@ export async function apiFetch(path, options = {}) {
     window.dispatchEvent(new Event('finly:logout'))
   }
 
+  // CloudFront SPA fallback converts 404/403 from ALL origins (including ALB) into
+  // 200 + index.html. Detect this by checking the Content-Type before returning.
+  const contentType = res.headers.get('content-type') || ''
+  if (contentType.includes('text/html')) {
+    return new Response(JSON.stringify({ detail: '요청한 리소스를 찾을 수 없습니다.' }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   return res
 }
