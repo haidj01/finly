@@ -1,13 +1,37 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { useStore } from '../../store/useStore'
 import { fetchLatestPrices, placeOrder, fetchAsset } from '../../api/alpaca'
 import OrderModal from '../shared/OrderModal'
 import { apiFetch } from '../../api/client'
 
+// 동적 로딩 메시지 순환
+const LOADING_MESSAGES = [
+  '시장 데이터 수집 중...',
+  'AI 분석 중...',
+  '결과 정리 중...',
+]
+
 async function fetchTrending() {
   const res = await apiFetch('/api/trending')
   if (!res.ok) throw new Error(`오류 ${res.status}`)
   return res.json()
+}
+
+// 현재 시각이 미국 주식시장 장중인지 판단 (EST/EDT 기준)
+function isMarketHours() {
+  const now = new Date()
+  // UTC → EST/EDT 변환 (EST = UTC-5, EDT = UTC-4)
+  const estTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+  const hours = estTime.getHours()
+  const minutes = estTime.getMinutes()
+  const day = estTime.getDay()
+
+  // 월-금 09:30-16:00
+  if (day === 0 || day === 6) return false
+  if (hours < 9 || hours >= 16) return false
+  if (hours === 9 && minutes < 30) return false
+
+  return true
 }
 
 const GRADE_CLS = {
@@ -115,8 +139,9 @@ function StockCard({ stock, onOrder }) {
   )
 }
 
-function SectionBlock({ section, stocks, loading, onOrder }) {
-  if (loading) {
+function SectionBlock({ section, stocks, loading, isBackgroundRefresh, onOrder }) {
+  // 초기 로드일 때만 스켈레톤 표시, 백그라운드 갱신 시 이전 데이터 유지
+  if (loading && !isBackgroundRefresh) {
     return (
       <div>
         <div className="flex items-center gap-2 mb-3">
@@ -136,7 +161,7 @@ function SectionBlock({ section, stocks, loading, onOrder }) {
   }
 
   return (
-    <div>
+    <div className={isBackgroundRefresh && loading ? 'opacity-60' : ''}>
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">{section.icon}</span>
         <div>
@@ -162,20 +187,127 @@ export default function Trending() {
   const [error, setError]   = useState(null)
   const [order, setOrder]   = useState(null)
   const [lastUpdated, setLastUpdated] = useState(null)
+  const [loadingMessage, setLoadingMessage] = useState(LOADING_MESSAGES[0])
+  const [nextRefreshIn, setNextRefreshIn] = useState(null)
+  const [isBackgroundRefresh, setIsBackgroundRefresh] = useState(false)
 
-  const load = useCallback(async () => {
+  // 타이머 ref들 (cleanup 용도)
+  const timerRef = useRef(null)
+  const countdownRef = useRef(null)
+  const messageRef = useRef(null)
+  const isMountedRef = useRef(true)
+
+  // load 함수: isBackground 플래그로 배경 갱신 구분
+  const load = useCallback(async (isBackground = false) => {
+    if (!isMountedRef.current) return
+
     setLoading(true)
+    if (isBackground) setIsBackgroundRefresh(true)
     setError(null)
+
     try {
       const result = await fetchTrending()
+      if (!isMountedRef.current) return
       setData(result)
       setLastUpdated(new Date())
     } catch (e) {
+      if (!isMountedRef.current) return
       console.error('[Trending]', e)
       setError(e.message || '데이터 로딩 실패')
+    } finally {
+      if (isMountedRef.current) {
+        setLoading(false)
+        setIsBackgroundRefresh(false)
+      }
     }
-    setLoading(false)
   }, [])
+
+  // 로딩 메시지 순환 (0.8초마다)
+  useEffect(() => {
+    if (!loading) return
+
+    let index = 0
+    messageRef.current = setInterval(() => {
+      if (isMountedRef.current) {
+        setLoadingMessage(LOADING_MESSAGES[index % LOADING_MESSAGES.length])
+        index++
+      }
+    }, 800)
+
+    return () => {
+      if (messageRef.current) clearInterval(messageRef.current)
+    }
+  }, [loading])
+
+  // 카운트다운 타이머 (1초마다 업데이트)
+  useEffect(() => {
+    if (!nextRefreshIn) return
+
+    countdownRef.current = setInterval(() => {
+      setNextRefreshIn(prev => {
+        if (prev <= 1) {
+          if (countdownRef.current) clearInterval(countdownRef.current)
+          return null
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current)
+    }
+  }, [nextRefreshIn])
+
+  // 자동 갱신 스케줄러
+  useEffect(() => {
+    // 초기 진입 시 자동 로드
+    load(false)
+
+    // 갱신 스케줄 설정
+    const scheduleNextRefresh = () => {
+      const market = isMarketHours()
+      const interval = market ? 5 * 60 : 30 * 60 // 장중 5분, 장외 30분
+
+      setNextRefreshIn(interval)
+
+      timerRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          load(true)
+          scheduleNextRefresh() // 재귀적으로 다음 갱신 스케줄
+        }
+      }, interval * 1000)
+    }
+
+    scheduleNextRefresh()
+
+    // cleanup
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [load])
+
+  // 컴포넌트 언마운트 시 모든 타이머 정리
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+      if (timerRef.current) clearTimeout(timerRef.current)
+      if (countdownRef.current) clearInterval(countdownRef.current)
+      if (messageRef.current) clearInterval(messageRef.current)
+    }
+  }, [])
+
+  // 카운트다운 포맷팅 (mm:ss 또는 hh:mm:ss)
+  const formatCountdown = (seconds) => {
+    if (!seconds) return null
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = seconds % 60
+
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+    }
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-5 scrollbar-thin">
@@ -186,14 +318,22 @@ export default function Trending() {
           <p className="text-xs text-gray-400 mt-0.5">
             Alpaca 실시간 데이터 + Claude AI 분석
             {lastUpdated && ` · 업데이트 ${lastUpdated.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`}
+            {nextRefreshIn && ` · 다음 갱신 ${formatCountdown(nextRefreshIn)}`}
           </p>
         </div>
         <button
-          onClick={load}
+          onClick={() => load(false)}
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-accent transition-all disabled:opacity-40"
         >
-          <span>{loading ? '분석 중...' : '↻ 분석 시작'}</span>
+          {loading ? (
+            <>
+              <span className="inline-block animate-spin">⟳</span>
+              <span>{loadingMessage}</span>
+            </>
+          ) : (
+            <span>↻ 분석 시작</span>
+          )}
         </button>
       </div>
 
@@ -208,7 +348,7 @@ export default function Trending() {
             </div>
           </div>
           <button
-            onClick={load}
+            onClick={() => load(false)}
             className="px-6 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-accent transition-all"
           >
             분석 시작
@@ -232,6 +372,7 @@ export default function Trending() {
               section={sec}
               stocks={data?.[sec.key] || []}
               loading={loading}
+              isBackgroundRefresh={isBackgroundRefresh}
               onOrder={setOrder}
             />
           ))}
