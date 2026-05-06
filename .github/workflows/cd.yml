@@ -1,0 +1,46 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+env:
+  AWS_REGION:   us-east-1
+  S3_BUCKET:    finly-frontend-assets
+  CF_DIST_ID:   E10GUR6OHX30OM
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::979126074847:role/finly-github-actions
+          aws-region:     ${{ env.AWS_REGION }}
+
+      - name: Sync to S3
+        run: aws s3 sync dist/ s3://$S3_BUCKET --delete
+
+      - name: Invalidate CloudFront
+        run: aws cloudfront create-invalidation --distribution-id $CF_DIST_ID --paths "/*"
