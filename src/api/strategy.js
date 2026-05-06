@@ -27,3 +27,12 @@ export async function deleteStrategy(sid) {
   if (!res.ok) throw new Error('Delete failed')
   return res.json()
 }
+
+export async function fetchTradeHistory({ limit = 50, offset = 0, status = '', symbol = '' } = {}) {
+  const params = new URLSearchParams({ limit, offset })
+  if (status) params.set('status', status)
+  if (symbol) params.set('symbol', symbol)
+  const res = await apiFetch(`/api/strategy/trade-history?${params}`)
+  if (!res.ok) throw new Error('Trade history fetch failed')
+  return res.json()
+}

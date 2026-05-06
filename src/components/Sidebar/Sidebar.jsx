@@ -5,7 +5,7 @@ import { searchTicker } from '../../api/claude'
 import WatchlistItem from './WatchlistItem'
 import AlpacaAccount from './AlpacaAccount'
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }) {
   const { watchlist, addWatch } = useStore()
   const [showModal, setShowModal] = useState(false)
   const [sym, setSym] = useState('')
@@ -67,6 +67,17 @@ export default function Sidebar() {
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 overflow-y-auto scrollbar-thin">
+      {/* Mobile close button */}
+      {onClose && (
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 md:hidden">
+          <span className="text-sm font-semibold text-gray-700">메뉴</span>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors text-lg leading-none"
+          >×</button>
+        </div>
+      )}
+
       {/* WATCHLIST */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex justify-between items-center mb-3">

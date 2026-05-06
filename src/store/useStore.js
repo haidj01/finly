@@ -32,6 +32,9 @@ export const useStore = create(
       view: 'dashboard',  // 'dashboard' | 'trending' | 'chat' | 'stock'
       setView: (view) => set({ view }),
 
+      sidebarOpen: false,
+      setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+
       // ── Stock Detail ─────────────────────────────────────────
       selectedSymbol: null,
       setSelectedSymbol: (sym) => set({ selectedSymbol: sym, view: 'stock' }),

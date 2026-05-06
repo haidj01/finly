@@ -6,7 +6,13 @@ export async function sendMessage(messages, systemPrompt) {
     body: JSON.stringify({ messages, system: systemPrompt }),
   })
   const data = await res.json()
-  if (!res.ok) throw new Error(data.detail || 'Claude API 오류')
+  if (!res.ok) {
+    const detail = data.detail
+    const msg = typeof detail === 'string' ? detail
+      : Array.isArray(detail) ? detail.map(d => d.msg).join(', ')
+      : `Claude API 오류 (${res.status})`
+    throw new Error(msg)
+  }
   return data
 }
 
