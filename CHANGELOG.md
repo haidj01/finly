@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.0](https://github.com/haidj01/finly/compare/finly-v0.3.2...finly-v0.4.0) (2026-05-06)
+
+
+### Features
+
+* trade history view, stock detail history, AI strategy recommendation ([aaa62b2](https://github.com/haidj01/finly/commit/aaa62b20912b6673171e3becacff50b3c5e7a83f))
+* trade history view, stock detail history, AI strategy recommendation ([88a4b62](https://github.com/haidj01/finly/commit/88a4b6291ece9f4a89d2a43fbd9f5d547b67c652))
+* **trending:** display PE, analyst rating, growth, grade badges on stock cards ([b6fc20b](https://github.com/haidj01/finly/commit/b6fc20bc08eb1f153520d0d72aaff1a2392cf634))
+* **trending:** show grade badge, PE, analyst rating, growth on stock cards ([de50906](https://github.com/haidj01/finly/commit/de509060ff82218c465c0fdd0e7b6c876bd0afa4))
+* 주목종목 자동 새로고침 + 상세 로딩 UI 추가 ([4e1805f](https://github.com/haidj01/finly/commit/4e1805f1cda403695f7d74ba8a706f433faadf0a))
+
+
+### Bug Fixes
+
+* handle CloudFront SPA fallback returning HTML for API 404 errors ([2fbe497](https://github.com/haidj01/finly/commit/2fbe497bbe6f6c3833a9978e2563169ff0c51292))
+
 ## [0.3.2](https://github.com/haidj01/finly/compare/finly-v0.3.1...finly-v0.3.2) (2026-04-29)
 
 
