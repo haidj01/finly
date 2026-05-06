@@ -4,7 +4,7 @@ import {
 } from 'recharts'
 import { useStore } from '../../store/useStore'
 import { fetchSnapshot, fetchBars, fetchAsset, fetchNews, placeOrder } from '../../api/alpaca'
-import { fetchStrategies, createStrategy, toggleStrategy, deleteStrategy } from '../../api/strategy'
+import { fetchStrategies, createStrategy, toggleStrategy, deleteStrategy, fetchTradeHistory } from '../../api/strategy'
 
 const STRATEGY_TYPES = [
   { value: 'stop_loss',     label: 'Stop Loss' },
@@ -17,9 +17,20 @@ function fmt(n, digits = 2) {
   return Number(n).toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })
 }
 
-function fmtDate(iso) {
+const PERIODS = [
+  { key: '1D', label: '1일' },
+  { key: '1W', label: '1주' },
+  { key: '1M', label: '1개월' },
+  { key: '1Y', label: '1년' },
+]
+
+function fmtDate(iso, period) {
   if (!iso) return ''
-  return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+  const d = new Date(iso)
+  if (period === '1D') {
+    return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/New_York' })
+  }
+  return d.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
 }
 
 export default function StockDetail() {
@@ -32,8 +43,15 @@ export default function StockDetail() {
   const [bars, setBars]       = useState([])
   const [news, setNews]       = useState([])
   const [strategies, setStrategies] = useState([])
+  const [tradeHistory, setTradeHistory] = useState([])
+  const [tradeTotal, setTradeTotal]     = useState(0)
+  const [tradeOffset, setTradeOffset]   = useState(0)
+  const [histLoading, setHistLoading]   = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState(null)
+
+  // Order state
+  const [period, setPeriod] = useState('1M')
 
   // Order state
   const [orderSide, setOrderSide] = useState('buy')
@@ -57,20 +75,22 @@ export default function StockDetail() {
     setLoading(true)
     setError(null)
     try {
-      const [snapData, barsData, newsData, stratData] = await Promise.all([
+      const [snapData, newsData, stratData, histData] = await Promise.all([
         fetchSnapshot(s),
-        fetchBars(s, 60),
         fetchNews([s]).catch(() => []),
         fetchStrategies().catch(() => []),
+        fetchTradeHistory({ limit: 20, symbol: s }).catch(() => ({ items: [] })),
       ])
       setSnap(snapData)
-      setBars(barsData.map(b => ({ date: fmtDate(b.t), close: +b.c.toFixed(2) })))
       const allNews = [
         ...(newsData?.alpaca?.items ?? []),
         ...(newsData?.google?.items ?? []),
       ].sort((a, b) => (b.time > a.time ? 1 : -1)).slice(0, 5)
       setNews(allNews)
       setStrategies(stratData.filter(st => st.symbol === s))
+      setTradeHistory(histData.items ?? [])
+      setTradeTotal(histData.total ?? 0)
+      setTradeOffset(histData.items?.length ?? 0)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -78,9 +98,35 @@ export default function StockDetail() {
     }
   }, [])
 
+  const loadBars = useCallback(async (s, p) => {
+    if (!s) return
+    try {
+      const barsData = await fetchBars(s, p)
+      setBars((barsData || []).map(b => ({ date: fmtDate(b.t, p), close: +b.c.toFixed(2) })))
+    } catch {
+      setBars([])
+    }
+  }, [])
+
+  const loadMoreHistory = useCallback(async () => {
+    if (!sym || histLoading) return
+    setHistLoading(true)
+    try {
+      const data = await fetchTradeHistory({ limit: 20, offset: tradeOffset, symbol: sym })
+      setTradeHistory(prev => [...prev, ...(data.items ?? [])])
+      setTradeTotal(data.total ?? 0)
+      setTradeOffset(prev => prev + (data.items?.length ?? 0))
+    } catch {}
+    finally { setHistLoading(false) }
+  }, [sym, tradeOffset, histLoading])
+
   useEffect(() => {
     if (sym) load(sym)
   }, [sym, load])
+
+  useEffect(() => {
+    if (sym) loadBars(sym, period)
+  }, [sym, period, loadBars])
 
   function handleSearch(e) {
     e.preventDefault()
@@ -168,9 +214,9 @@ export default function StockDetail() {
   const isUp = dayChange >= 0
 
   return (
-    <div className="flex-1 overflow-y-auto p-5 scrollbar-thin">
+    <div className="flex-1 overflow-y-auto p-4 md:p-5 scrollbar-thin">
       {/* Search bar */}
-      <form onSubmit={handleSearch} className="flex gap-2 mb-5">
+      <form onSubmit={handleSearch} className="flex gap-2 mb-4 md:mb-5">
         <input
           value={input}
           onChange={e => setInput(e.target.value.toUpperCase())}
@@ -198,11 +244,11 @@ export default function StockDetail() {
       )}
 
       {sym && !loading && snap && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
           {/* ── Price Card ─────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-2">
-            <div className="flex items-start justify-between">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-full">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-2xl font-bold">{sym}</span>
@@ -246,8 +292,25 @@ export default function StockDetail() {
           </div>
 
           {/* ── Chart ──────────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-2">
-            <div className="text-sm font-semibold text-gray-700 mb-3">60일 주가 차트</div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-full">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-semibold text-gray-700">주가 차트</div>
+              <div className="flex gap-1">
+                {PERIODS.map(p => (
+                  <button
+                    key={p.key}
+                    onClick={() => setPeriod(p.key)}
+                    className={`text-xs px-3 py-1 rounded-lg font-medium transition-colors ${
+                      period === p.key
+                        ? 'bg-accent text-white'
+                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             {bars.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <AreaChart data={bars} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -443,9 +506,63 @@ export default function StockDetail() {
             )}
           </div>
 
+          {/* ── Trade History ─────────────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-full">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-semibold text-gray-700">매매 이력</div>
+              {tradeTotal > 0 && <span className="text-xs text-gray-400">총 {tradeTotal}건</span>}
+            </div>
+            {tradeHistory.length === 0 ? (
+              <p className="text-xs text-gray-400">매매 이력 없음</p>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  {tradeHistory.map(item => {
+                    const isExec = item.status === 'executed'
+                    const isFail = item.status === 'failed'
+                    const isBuy  = item.side === 'buy'
+                    const d = new Date(item.time)
+                    const pad = n => String(n).padStart(2, '0')
+                    const timeStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+                    return (
+                      <div key={item.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`font-semibold flex-shrink-0 ${isBuy ? 'text-accent-dark' : 'text-red-500'}`}>
+                            {isBuy ? '매수' : '매도'}
+                          </span>
+                          {item.qty != null && <span className="text-gray-500 flex-shrink-0">{item.qty}주</span>}
+                          <span className="text-xs text-gray-400 truncate">{item.strategy_name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                          <span className="text-xs text-gray-400 font-mono hidden sm:inline">{timeStr}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            isExec ? 'bg-green-50 text-green-600' :
+                            isFail ? 'bg-red-50 text-red-500' :
+                            'bg-gray-100 text-gray-400'
+                          }`}>
+                            {isExec ? '체결' : isFail ? '실패' : '스킵'}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                {tradeHistory.length < tradeTotal && (
+                  <button
+                    onClick={loadMoreHistory}
+                    disabled={histLoading}
+                    className="mt-3 w-full py-1.5 text-xs text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                  >
+                    {histLoading ? '불러오는 중...' : `더 보기 (${tradeTotal - tradeHistory.length}건 남음)`}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
           {/* ── News ──────────────────────────────────────────── */}
           {news.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-2">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-full">
               <div className="text-sm font-semibold text-gray-700 mb-3">관련 뉴스</div>
               <div className="space-y-3">
                 {news.map((n, i) => (

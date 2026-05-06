@@ -42,8 +42,8 @@ export async function fetchSnapshot(sym) {
   return res.json()
 }
 
-export async function fetchBars(sym, limit = 60) {
-  const res = await apiFetch(`/api/alpaca/bars/${sym}?limit=${limit}`)
+export async function fetchBars(sym, period = '1M') {
+  const res = await apiFetch(`/api/alpaca/bars/${sym}?period=${period}`)
   if (!res.ok) throw new Error('Bars fetch failed')
   return res.json()
 }

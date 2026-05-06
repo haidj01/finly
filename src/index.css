@@ -18,6 +18,7 @@
 @layer utilities {
   .scrollbar-thin::-webkit-scrollbar { width: 4px; }
   .scrollbar-thin::-webkit-scrollbar-thumb { background: #d0d5dd; border-radius: 4px; }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 }
 
 @keyframes fadeUp {

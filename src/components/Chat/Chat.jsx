@@ -3,6 +3,7 @@ import { useStore } from '../../store/useStore'
 import { sendMessage } from '../../api/claude'
 import ChatMessage from './ChatMessage'
 import ActionCard from './ActionCard'
+import StrategyCard from './StrategyCard'
 
 const CHIPS = ['AAPL 분석해줘', 'NVDA 매수해도 될까?', '내 포트폴리오 평가해줘', '오늘 시장 시황', 'S&P500 전망은?', '리스크 분석']
 
@@ -32,7 +33,16 @@ export default function Chat() {
 - 기술적/펀더멘털 분석 기반 매매 추천 (BUY/SELL/HOLD)
 - 추천 시 반드시 현재가·목표가·손절가·근거·리스크 명시
 - 한국어 답변, 수치 구체적으로 제시
-- 매매 추천 시 마지막에 반드시 "⚠️ 투자 판단은 본인 책임입니다" 포함`
+- 매매 추천 시 마지막에 반드시 "⚠️ 투자 판단은 본인 책임입니다" 포함
+
+전략 추천 규칙:
+종목 분석 시 손절가·목표가 수치가 명확하다면 답변 마지막에 반드시 아래 블록을 포함하세요:
+[[STRATEGIES]]
+[{"type":"stop_loss","symbol":"티커","name":"전략명","condition":{"drop_pct":숫자},"action":{"side":"sell","qty_pct":100}},{"type":"take_profit","symbol":"티커","name":"전략명","condition":{"gain_pct":숫자},"action":{"side":"sell","qty_pct":100}},{"type":"price_target","symbol":"티커","name":"전략명","condition":{"target_price":숫자,"direction":"above"},"action":{"side":"sell","qty_pct":100}}]
+[[/STRATEGIES]]
+- type은 stop_loss(손절), take_profit(익절), price_target(목표가) 중 선택
+- 분석에서 도출된 실제 수치만 사용, 불확실하면 해당 항목 생략
+- 블록은 마크다운 코드블록 없이 순수 텍스트로만`
   }
 
   const send = async (text) => {
@@ -52,12 +62,22 @@ export default function Chat() {
       const reply = data.content.filter(b => b.type === 'text').map(b => b.text).join('')
       setApiMessages(prev => [...prev, { role: 'assistant', content: data.content }])
 
-      const isBuy  = /매수|BUY/i.test(reply)
-      const isSell = /매도|SELL/i.test(reply)
-      const tm     = reply.match(/\b([A-Z]{2,5})\b/)
+      const stratMatch = reply.match(/\[\[STRATEGIES\]\]([\s\S]*?)\[\[\/STRATEGIES\]\]/)
+      let strategies = null
+      let cleanReply = reply
+      if (stratMatch) {
+        try {
+          strategies = JSON.parse(stratMatch[1].trim())
+        } catch {}
+        cleanReply = reply.replace(/\[\[STRATEGIES\]\][\s\S]*?\[\[\/STRATEGIES\]\]/, '').trim()
+      }
+
+      const isBuy  = /매수|BUY/i.test(cleanReply)
+      const isSell = /매도|SELL/i.test(cleanReply)
+      const tm     = cleanReply.match(/\b([A-Z]{2,5})\b/)
       const actionTicker = (isBuy || isSell) && tm ? tm[1] : null
 
-      addChatMsg({ role: 'ai', text: reply, action: actionTicker ? { sym: actionTicker, isBuy, isSell } : null })
+      addChatMsg({ role: 'ai', text: cleanReply, action: actionTicker ? { sym: actionTicker, isBuy, isSell } : null, strategies })
     } catch (e) {
       addChatMsg({ role: 'ai', text: `⚠️ 오류가 발생했습니다: ${e.message}` })
     }
@@ -96,6 +116,7 @@ export default function Chat() {
           <div key={i}>
             <ChatMessage msg={msg} />
             {msg.action && <ActionCard action={msg.action} />}
+            {msg.strategies && msg.strategies.length > 0 && <StrategyCard strategies={msg.strategies} />}
           </div>
         ))}
 

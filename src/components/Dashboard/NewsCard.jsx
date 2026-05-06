@@ -105,7 +105,7 @@ export default function NewsCard() {
   }, [watchlist])
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm col-span-2">
+    <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm col-span-full">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-base font-bold">Market News</h2>
         <div className="flex items-center gap-2">
