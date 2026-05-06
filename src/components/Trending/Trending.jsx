@@ -37,6 +37,7 @@ const CATEGORY_BADGE = {
   most_active: { label: '거래량급등', cls: 'bg-orange-50 text-orange-500' },
   gainer:      { label: '상승',       cls: 'bg-green-50 text-green-600' },
   loser:       { label: '하락반등',   cls: 'bg-blue-50 text-blue-500' },
+  fmp_pick:    { label: '저평가',     cls: 'bg-purple-50 text-purple-500' },
 }
 
 function StockCard({ stock, onOrder }) {
@@ -90,6 +91,11 @@ function StockCard({ stock, onOrder }) {
             <span className="text-red-400">⚠ {stock.risk}</span>
           </div>
         )}
+        {stock.news_headline && (
+          <div className="border-l-2 border-blue-100 pl-2">
+            <span className="text-blue-400 line-clamp-1">{stock.news_headline}</span>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 mb-3">
@@ -111,7 +117,17 @@ function StockCard({ stock, onOrder }) {
         {stock.growth && (
           <span className="text-[10px] text-gray-400">성장 {stock.growth}</span>
         )}
-        {stock.confidence == null && stock.pe == null && !stock.analyst && !stock.growth && (
+        {stock.has_flow_alert && stock.flow_bullish_ratio != null && stock.flow_bullish_ratio > 0.6 && (
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500">
+            콜 {Math.round(stock.flow_bullish_ratio * 100)}%
+          </span>
+        )}
+        {stock.insider_buys > 0 && (
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+            내부자매수 {stock.insider_buys}건
+          </span>
+        )}
+        {stock.confidence == null && stock.pe == null && !stock.analyst && !stock.growth && !stock.has_flow_alert && stock.insider_buys === 0 && (
           <span className="text-[10px] text-gray-300">거래량 {stock.volume > 0 ? (stock.volume / 1_000_000).toFixed(1) + 'M' : '-'}</span>
         )}
       </div>
@@ -192,8 +208,8 @@ export default function Trending() {
         <div>
           <h1 className="text-lg font-bold">매수 추천 종목</h1>
           <p className="text-xs text-gray-400 mt-0.5">
-            Alpaca 실시간 데이터 + Claude AI 선별
-            {lastUpdated && ` · 업데이트 ${lastUpdated.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`}
+            Alpaca · Polygon 옵션 · SEC EDGAR · FMP 뉴스 + Claude AI
+            {lastUpdated && ` · ${lastUpdated.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`}
           </p>
         </div>
         <button
