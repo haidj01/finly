@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/haidj01/finly/compare/finly-v0.4.0...finly-v0.5.0) (2026-05-06)
+
+
+### Features
+
+* display options flow, insider trades, and news in trending cards ([92f153a](https://github.com/haidj01/finly/commit/92f153aeb76fb00264f3959d660f31f9548e5b56))
+* display options flow, insider trades, and news in trending stock cards ([fb42e4b](https://github.com/haidj01/finly/commit/fb42e4bc0d74ed4c2a54ecf1aef7beef74580bb7))
+
+
+### Bug Fixes
+
+* add .env.production with EC2 API URL for production builds ([e62b7f8](https://github.com/haidj01/finly/commit/e62b7f8bb0a4f9fdb0e790481ed4fa35ee19b363))
+* use CloudFront HTTPS URL as API base to resolve mixed content ([cf2eda8](https://github.com/haidj01/finly/commit/cf2eda8ca5ed93d2598565f85897f27ee73373c0))
+
 ## [0.4.0](https://github.com/haidj01/finly/compare/finly-v0.3.2...finly-v0.4.0) (2026-05-06)
 
 
