@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/haidj01/finly/compare/finly-v0.5.0...finly-v0.6.0) (2026-05-13)
+
+
+### Features
+
+* strategy UI for P1-P4 types + market regime dashboard card ([2e6a7cb](https://github.com/haidj01/finly/commit/2e6a7cb227995e0d146d1c31abb4d88d33ee4d6c))
+
 ## [0.5.0](https://github.com/haidj01/finly/compare/finly-v0.4.0...finly-v0.5.0) (2026-05-06)
 
 
