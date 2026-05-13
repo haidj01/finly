@@ -2,9 +2,13 @@ import React, { useState } from 'react'
 import { createStrategy } from '../../api/strategy'
 
 const TYPE_META = {
-  stop_loss:    { label: '손절',  cls: 'bg-red-50 text-red-500',    icon: '🛡️' },
-  take_profit:  { label: '익절',  cls: 'bg-green-50 text-green-600', icon: '🎯' },
-  price_target: { label: '목표가', cls: 'bg-blue-50 text-blue-500',  icon: '📌' },
+  stop_loss:     { label: '손절',   cls: 'bg-red-50 text-red-500',      icon: '🛡️' },
+  take_profit:   { label: '익절',   cls: 'bg-green-50 text-green-600',   icon: '🎯' },
+  price_target:  { label: '목표가',  cls: 'bg-blue-50 text-blue-500',    icon: '📌' },
+  trailing_stop:  { label: '추적손절', cls: 'bg-orange-50 text-orange-500', icon: '📉' },
+  rsi_threshold:  { label: 'RSI',      cls: 'bg-purple-50 text-purple-600',  icon: '📊' },
+  ma_cross:       { label: 'MA 크로스',  cls: 'bg-yellow-50 text-yellow-600', icon: '✂️' },
+  bollinger_band: { label: 'BB',         cls: 'bg-cyan-50 text-cyan-600',     icon: '📡' },
 }
 
 function conditionSummary(type, condition) {
@@ -13,6 +17,22 @@ function conditionSummary(type, condition) {
   if (type === 'price_target') {
     const dir = condition.direction === 'above' ? '이상' : '이하'
     return `$${condition.target_price} ${dir} 도달 시`
+  }
+  if (type === 'trailing_stop') return `고점 대비 -${condition.trail_pct}% 하락 시 전량 매도`
+  if (type === 'rsi_threshold') {
+    const dir = condition.direction === 'below' ? '이하' : '이상'
+    const act = condition.direction === 'below' ? '매수' : '매도'
+    return `RSI(${condition.period}) ${condition.threshold} ${dir} 시 ${act}`
+  }
+  if (type === 'ma_cross') {
+    const label = condition.direction === 'golden' ? '골든크로스' : '데드크로스'
+    const act   = condition.direction === 'golden' ? '매수' : '매도'
+    return `MA${condition.fast}/MA${condition.slow} ${label} 시 ${act}`
+  }
+  if (type === 'bollinger_band') {
+    const dir = condition.direction === 'below_lower' ? '하단밴드 이하' : '상단밴드 이상'
+    const act = condition.direction === 'below_lower' ? '매수' : '매도'
+    return `BB(${condition.period}, ${condition.multiplier}σ) ${dir} 시 ${act}`
   }
   return ''
 }

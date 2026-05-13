@@ -10,6 +10,10 @@ const STRATEGY_TYPES = [
   { value: 'stop_loss',     label: 'Stop Loss' },
   { value: 'take_profit',   label: 'Take Profit' },
   { value: 'price_target',  label: '목표가' },
+  { value: 'trailing_stop', label: 'Trailing Stop' },
+  { value: 'rsi_threshold', label: 'RSI' },
+  { value: 'ma_cross',      label: 'MA 크로스' },
+  { value: 'bollinger_band', label: 'Bollinger Band' },
 ]
 
 function fmt(n, digits = 2) {
@@ -64,8 +68,13 @@ export default function StockDetail() {
   const [stratVal, setStratVal]   = useState('')        // drop_pct / gain_pct / target_price
   const [stratDir, setStratDir]   = useState('above')  // price_target direction
   const [stratSide, setStratSide] = useState('buy')     // price_target action side
-  const [stratQty, setStratQty]   = useState(1)         // price_target qty
-  const [stratMsg, setStratMsg]   = useState(null)
+  const [stratQty, setStratQty]       = useState(1)     // price_target / rsi qty
+  const [stratRsiPeriod, setStratRsiPeriod] = useState(14)
+  const [stratMaFast, setStratMaFast]           = useState(5)
+  const [stratMaSlow, setStratMaSlow]           = useState(20)
+  const [stratBbPeriod, setStratBbPeriod]       = useState(20)
+  const [stratBbMultiplier, setStratBbMultiplier] = useState(2.0)
+  const [stratMsg, setStratMsg]                 = useState(null)
 
   const inWatchlist = watchlist.some(w => w.sym === sym)
   const position    = positions.find(p => p.symbol === sym)
@@ -175,6 +184,27 @@ export default function StockDetail() {
       condition = { gain_pct: val }
       action    = { side: 'sell', qty_type: 'all' }
       name      = `${sym} Take Profit ${val}%`
+    } else if (stratType === 'trailing_stop') {
+      condition = { trail_pct: val }
+      action    = { side: 'sell', qty_type: 'all' }
+      name      = `${sym} Trailing Stop ${val}%`
+    } else if (stratType === 'rsi_threshold') {
+      const side = stratDir === 'below' ? 'buy' : 'sell'
+      condition = { period: stratRsiPeriod, threshold: val, direction: stratDir }
+      action    = { side, qty: stratQty, qty_type: 'shares' }
+      name      = `${sym} RSI(${stratRsiPeriod}) ${stratDir === 'below' ? '<' : '>'}${val}`
+    } else if (stratType === 'ma_cross') {
+      const side    = stratDir === 'golden' ? 'buy' : 'sell'
+      const qtyType = stratDir === 'golden' ? 'shares' : 'all'
+      condition = { fast: stratMaFast, slow: stratMaSlow, direction: stratDir }
+      action    = { side, qty: stratDir === 'golden' ? stratQty : undefined, qty_type: qtyType }
+      name      = `${sym} MA${stratMaFast}/MA${stratMaSlow} ${stratDir === 'golden' ? '골든' : '데드'}크로스`
+    } else if (stratType === 'bollinger_band') {
+      const side    = stratDir === 'below_lower' ? 'buy' : 'sell'
+      const qtyType = stratDir === 'below_lower' ? 'shares' : 'all'
+      condition = { period: stratBbPeriod, multiplier: stratBbMultiplier, direction: stratDir }
+      action    = { side, qty: stratDir === 'below_lower' ? stratQty : undefined, qty_type: qtyType }
+      name      = `${sym} BB(${stratBbPeriod},${stratBbMultiplier}σ) ${stratDir === 'below_lower' ? '하단' : '상단'}`
     } else {
       condition = { target_price: val, direction: stratDir }
       action    = { side: stratSide, qty: stratQty, qty_type: 'shares' }
@@ -435,6 +465,91 @@ export default function StockDetail() {
                   <input type="number" step="0.1" min="0.1" placeholder="수익 목표 (%)" value={stratVal}
                     onChange={e => setStratVal(e.target.value)} required
                     className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                )}
+                {stratType === 'trailing_stop' && (
+                  <input type="number" step="0.1" min="0.1" placeholder="추적 손절 기준 (%)" value={stratVal}
+                    onChange={e => setStratVal(e.target.value)} required
+                    className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                )}
+                {stratType === 'rsi_threshold' && (
+                  <>
+                    <div className="flex gap-2">
+                      <input type="number" min="2" max="50" value={stratRsiPeriod}
+                        onChange={e => setStratRsiPeriod(parseInt(e.target.value) || 14)}
+                        className="w-20 border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+                        title="RSI 기간" />
+                      <input type="number" step="1" min="1" max="99" placeholder="임계값 (예: 30)" value={stratVal}
+                        onChange={e => setStratVal(e.target.value)} required
+                        className="flex-1 border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                      <select value={stratDir} onChange={e => setStratDir(e.target.value)}
+                        className="flex-1 border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                        <option value="below">이하 → 매수</option>
+                        <option value="above">이상 → 매도</option>
+                      </select>
+                    </div>
+                    <input type="number" min="1" max="10000" value={stratQty}
+                      onChange={e => setStratQty(parseInt(e.target.value) || 1)}
+                      placeholder="수량"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                  </>
+                )}
+                {stratType === 'ma_cross' && (
+                  <>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="text-[10px] text-gray-400 pl-1">빠른 MA</label>
+                        <input type="number" min="2" max="50" value={stratMaFast}
+                          onChange={e => setStratMaFast(parseInt(e.target.value) || 5)}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[10px] text-gray-400 pl-1">느린 MA</label>
+                        <input type="number" min="3" max="200" value={stratMaSlow}
+                          onChange={e => setStratMaSlow(parseInt(e.target.value) || 20)}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                      </div>
+                    </div>
+                    <select value={stratDir} onChange={e => setStratDir(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                      <option value="golden">골든크로스 → 매수</option>
+                      <option value="dead">데드크로스 → 전량 매도</option>
+                    </select>
+                    {stratDir === 'golden' && (
+                      <input type="number" min="1" max="10000" value={stratQty}
+                        onChange={e => setStratQty(parseInt(e.target.value) || 1)}
+                        placeholder="매수 수량"
+                        className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                    )}
+                  </>
+                )}
+                {stratType === 'bollinger_band' && (
+                  <>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <label className="text-[10px] text-gray-400 pl-1">기간</label>
+                        <input type="number" min="5" max="100" value={stratBbPeriod}
+                          onChange={e => setStratBbPeriod(parseInt(e.target.value) || 20)}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[10px] text-gray-400 pl-1">표준편차 배수</label>
+                        <input type="number" min="0.5" max="4" step="0.5" value={stratBbMultiplier}
+                          onChange={e => setStratBbMultiplier(parseFloat(e.target.value) || 2.0)}
+                          className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                      </div>
+                    </div>
+                    <select value={stratDir} onChange={e => setStratDir(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30">
+                      <option value="below_lower">하단밴드 이하 → 매수 (과매도)</option>
+                      <option value="above_upper">상단밴드 이상 → 전량 매도 (과매수)</option>
+                    </select>
+                    {stratDir === 'below_lower' && (
+                      <input type="number" min="1" max="10000" value={stratQty}
+                        onChange={e => setStratQty(parseInt(e.target.value) || 1)}
+                        placeholder="매수 수량"
+                        className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30" />
+                    )}
+                  </>
                 )}
                 {stratType === 'price_target' && (
                   <>
