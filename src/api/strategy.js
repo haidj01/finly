@@ -6,6 +6,22 @@ export async function fetchMarketRegime() {
   return res.json()
 }
 
+export async function fetchTradingMode() {
+  const res = await apiFetch('/api/market/trading-mode')
+  if (!res.ok) throw new Error('Trading mode fetch failed')
+  return res.json()
+}
+
+export async function setTradingMode(mode) {
+  const res = await apiFetch('/api/market/trading-mode', {
+    method: 'PUT',
+    body: JSON.stringify({ mode }),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || '모드 변경 실패')
+  return data
+}
+
 export async function fetchStrategies() {
   const res = await apiFetch('/api/strategy')
   if (!res.ok) throw new Error('Strategy fetch failed')
