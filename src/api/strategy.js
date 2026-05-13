@@ -1,5 +1,11 @@
 import { apiFetch } from './client'
 
+export async function fetchMarketRegime() {
+  const res = await apiFetch('/api/market/regime')
+  if (!res.ok) throw new Error('Market regime fetch failed')
+  return res.json()
+}
+
 export async function fetchStrategies() {
   const res = await apiFetch('/api/strategy')
   if (!res.ok) throw new Error('Strategy fetch failed')
