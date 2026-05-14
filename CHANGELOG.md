@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.0](https://github.com/haidj01/finly/compare/finly-v0.9.0...finly-v0.10.0) (2026-05-14)
+
+
+### Features
+
+* add 전략/워치독 source filter to trade history page ([aecd284](https://github.com/haidj01/finly/commit/aecd284d462f1ff4fc8eefee5b47c033b5e9cd3c))
+* add 전략/워치독 source filter to trade history page ([9e0ba32](https://github.com/haidj01/finly/commit/9e0ba32308db03422ef66eaafe3ef20639390acc))
+
 ## [0.9.0](https://github.com/haidj01/finly/compare/finly-v0.8.0...finly-v0.9.0) (2026-05-14)
 
 
