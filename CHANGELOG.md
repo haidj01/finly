@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.0](https://github.com/haidj01/finly/compare/finly-v0.12.1...finly-v0.13.0) (2026-05-14)
+
+
+### Features
+
+* show trading mode badge (LIVE/PAPER) next to Finly logo in header ([beeeb52](https://github.com/haidj01/finly/commit/beeeb52b7c591e8c9ba5100712fbc56a4e629dca))
+* show trading mode badge next to Finly logo ([15b2a0c](https://github.com/haidj01/finly/commit/15b2a0c88cde22c0e67963921bd4b3b797c9bfdd))
+
 ## [0.12.1](https://github.com/haidj01/finly/compare/finly-v0.12.0...finly-v0.12.1) (2026-05-14)
 
 
