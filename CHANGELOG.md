@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0](https://github.com/haidj01/finly/compare/finly-v0.6.0...finly-v0.7.0) (2026-05-14)
+
+
+### Features
+
+* add paper/live trading mode switch UI ([c343edf](https://github.com/haidj01/finly/commit/c343edf0a962949900770280dd01be72afd4e666))
+* paper/live trading mode switch UI ([0f8a264](https://github.com/haidj01/finly/commit/0f8a264239970cc61752d40318dae27a109f5555))
+* separate paper/live strategy view in StockDetail ([04c4968](https://github.com/haidj01/finly/commit/04c49689c350140113c9e5cfacd5704b8349f91d))
+* separate paper/live strategy view in StockDetail ([148067b](https://github.com/haidj01/finly/commit/148067b26c677f6e56b8fbbc18454bcecd767ee2))
+
 ## [0.6.0](https://github.com/haidj01/finly/compare/finly-v0.5.0...finly-v0.6.0) (2026-05-13)
 
 
