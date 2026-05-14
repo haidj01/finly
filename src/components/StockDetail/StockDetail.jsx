@@ -214,6 +214,11 @@ export default function StockDetail() {
     if (sym) loadBars(sym, period)
   }, [sym, period, loadBars])
 
+  useEffect(() => {
+    setRecData(null)
+    setRecOpen(false)
+  }, [sym])
+
   function handleSearch(e) {
     e.preventDefault()
     const s = input.trim().toUpperCase()
