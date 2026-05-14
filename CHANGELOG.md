@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/haidj01/finly/compare/finly-v0.7.0...finly-v0.8.0) (2026-05-14)
+
+
+### Features
+
+* add paper/live mode tabs to trade history page ([4d00ba5](https://github.com/haidj01/finly/commit/4d00ba50883093607bb54d03e193409d2b2d0948))
+* add paper/live mode tabs to trade history page ([7828be7](https://github.com/haidj01/finly/commit/7828be74f839a759e226c164979494440b01a5ea))
+
 ## [0.7.0](https://github.com/haidj01/finly/compare/finly-v0.6.0...finly-v0.7.0) (2026-05-14)
 
 
