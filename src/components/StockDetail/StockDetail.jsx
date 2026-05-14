@@ -4,7 +4,7 @@ import {
 } from 'recharts'
 import { useStore } from '../../store/useStore'
 import { fetchSnapshot, fetchBars, fetchAsset, fetchNews, placeOrder } from '../../api/alpaca'
-import { fetchStrategies, createStrategy, toggleStrategy, deleteStrategy, fetchTradeHistory } from '../../api/strategy'
+import { fetchStrategies, createStrategy, toggleStrategy, deleteStrategy, fetchTradeHistory, fetchTradingMode } from '../../api/strategy'
 
 const STRATEGY_TYPES = [
   { value: 'stop_loss',     label: 'Stop Loss' },
@@ -62,6 +62,9 @@ export default function StockDetail() {
   const [orderQty, setOrderQty]   = useState(1)
   const [orderMsg, setOrderMsg]   = useState(null)
 
+  // Strategy mode tab
+  const [stratMode, setStratMode] = useState('paper')
+
   // Strategy form
   const [showForm, setShowForm]   = useState(false)
   const [stratType, setStratType] = useState('stop_loss')
@@ -84,10 +87,9 @@ export default function StockDetail() {
     setLoading(true)
     setError(null)
     try {
-      const [snapData, newsData, stratData, histData] = await Promise.all([
+      const [snapData, newsData, histData] = await Promise.all([
         fetchSnapshot(s),
         fetchNews([s]).catch(() => []),
-        fetchStrategies().catch(() => []),
         fetchTradeHistory({ limit: 20, symbol: s }).catch(() => ({ items: [] })),
       ])
       setSnap(snapData)
@@ -96,7 +98,6 @@ export default function StockDetail() {
         ...(newsData?.google?.items ?? []),
       ].sort((a, b) => (b.time > a.time ? 1 : -1)).slice(0, 5)
       setNews(allNews)
-      setStrategies(stratData.filter(st => st.symbol === s))
       setTradeHistory(histData.items ?? [])
       setTradeTotal(histData.total ?? 0)
       setTradeOffset(histData.items?.length ?? 0)
@@ -105,6 +106,14 @@ export default function StockDetail() {
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  const loadStrategies = useCallback(async (s, mode) => {
+    if (!s) return
+    try {
+      const data = await fetchStrategies(mode)
+      setStrategies(data.filter(st => st.symbol === s))
+    } catch {}
   }, [])
 
   const loadBars = useCallback(async (s, p) => {
@@ -130,8 +139,16 @@ export default function StockDetail() {
   }, [sym, tradeOffset, histLoading])
 
   useEffect(() => {
+    fetchTradingMode().then(d => setStratMode(d.mode)).catch(() => {})
+  }, [])
+
+  useEffect(() => {
     if (sym) load(sym)
   }, [sym, load])
+
+  useEffect(() => {
+    if (sym) loadStrategies(sym, stratMode)
+  }, [sym, stratMode, loadStrategies])
 
   useEffect(() => {
     if (sym) loadBars(sym, period)
@@ -212,8 +229,8 @@ export default function StockDetail() {
     }
 
     try {
-      const created = await createStrategy({ name, symbol: sym, type: stratType, condition, action })
-      setStrategies(prev => [...prev, created])
+      const res = await createStrategy({ name, symbol: sym, type: stratType, condition, action, account_mode: stratMode })
+      setStrategies(prev => [...prev, res.strategy])
       setStratVal('')
       setShowForm(false)
       setStratMsg({ ok: true, text: '전략이 추가되었습니다.' })
@@ -435,7 +452,26 @@ export default function StockDetail() {
           {/* ── Strategy ──────────────────────────────────────── */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-sm font-semibold text-gray-700">전략 설정</div>
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-semibold text-gray-700">전략 설정</div>
+                <div className="flex gap-1">
+                  {['paper', 'live'].map(m => (
+                    <button
+                      key={m}
+                      onClick={() => { setStratMode(m); setShowForm(false) }}
+                      className={`text-[11px] px-2.5 py-0.5 rounded-full font-medium transition-colors ${
+                        stratMode === m
+                          ? m === 'live'
+                            ? 'bg-red-500 text-white'
+                            : 'bg-blue-500 text-white'
+                          : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+                      }`}
+                    >
+                      {m === 'paper' ? '📄 Paper' : '💰 Live'}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button
                 onClick={() => setShowForm(f => !f)}
                 className="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
@@ -595,8 +631,15 @@ export default function StockDetail() {
                   <div key={st.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
                     <div>
                       <div className="text-xs font-semibold text-gray-700">{st.name}</div>
-                      <div className="text-[11px] text-gray-400">
+                      <div className="text-[11px] text-gray-400 flex items-center gap-1.5">
                         {STRATEGY_TYPES.find(t => t.value === st.type)?.label ?? st.type}
+                        <span className={`px-1.5 py-0 rounded-full text-[10px] font-medium ${
+                          st.account_mode === 'live'
+                            ? 'bg-red-100 text-red-600'
+                            : 'bg-blue-100 text-blue-600'
+                        }`}>
+                          {st.account_mode === 'live' ? 'Live' : 'Paper'}
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
