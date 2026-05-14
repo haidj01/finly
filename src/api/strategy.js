@@ -22,8 +22,9 @@ export async function setTradingMode(mode) {
   return data
 }
 
-export async function fetchStrategies() {
-  const res = await apiFetch('/api/strategy')
+export async function fetchStrategies(mode) {
+  const params = mode ? `?mode=${mode}` : ''
+  const res = await apiFetch(`/api/strategy${params}`)
   if (!res.ok) throw new Error('Strategy fetch failed')
   return res.json()
 }
