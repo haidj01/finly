@@ -6,6 +6,7 @@ import NewsCard from './NewsCard'
 import MarketRegimeCard from './MarketRegimeCard'
 import TradingModeSwitch from './TradingModeSwitch'
 import WatchdogCard from './WatchdogCard'
+import RegimeRecommendCard from './RegimeRecommendCard'
 
 export default function Dashboard() {
   return (
@@ -13,6 +14,7 @@ export default function Dashboard() {
       <MarketRegimeCard />
       <TradingModeSwitch />
       <WatchdogCard />
+      <RegimeRecommendCard />
       <IndicesCard />
       <SignalsCard />
       <PortfolioCard />
