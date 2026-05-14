@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/haidj01/finly/compare/finly-v0.8.0...finly-v0.9.0) (2026-05-14)
+
+
+### Features
+
+* add watchdog status card to dashboard ([31d9c34](https://github.com/haidj01/finly/commit/31d9c348a5c9d742ee1930f644f758552d3e6a5d))
+
 ## [0.8.0](https://github.com/haidj01/finly/compare/finly-v0.7.0...finly-v0.8.0) (2026-05-14)
 
 
