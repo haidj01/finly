@@ -7,14 +7,22 @@ export function useAlpacaRefresh() {
   const { watchlist, setAlpacaAccount, setPositions, setOrders, updateWatchPrices, setTradingMode } = useStore()
 
   const refresh = useCallback(async () => {
+    // Fetch trading mode independently so TradingModeSwitch always reflects
+    // the current server mode even when Alpaca account credentials fail.
     try {
-      const [acct, pos, ord, modeData] = await Promise.all([
-        fetchAccount(), fetchPositions(), fetchOrders(), fetchTradingMode(),
+      const modeData = await fetchTradingMode()
+      setTradingMode(modeData.mode)
+    } catch (e) {
+      console.error('Trading mode fetch error:', e)
+    }
+
+    try {
+      const [acct, pos, ord] = await Promise.all([
+        fetchAccount(), fetchPositions(), fetchOrders(),
       ])
       setAlpacaAccount(acct)
       setPositions(pos)
       setOrders(ord)
-      setTradingMode(modeData.mode)
 
       const syms = [...new Set([
         ...watchlist.map(w => w.sym),
