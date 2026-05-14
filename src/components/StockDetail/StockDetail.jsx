@@ -77,7 +77,21 @@ export default function StockDetail() {
   const [stratMaSlow, setStratMaSlow]           = useState(20)
   const [stratBbPeriod, setStratBbPeriod]       = useState(20)
   const [stratBbMultiplier, setStratBbMultiplier] = useState(2.0)
+  const [stratAllowedRegimes, setStratAllowedRegimes] = useState([])
   const [stratMsg, setStratMsg]                 = useState(null)
+
+  const REGIME_OPTIONS = [
+    { key: 'bearish',  label: '하락장' },
+    { key: 'volatile', label: '변동장' },
+    { key: 'trending', label: '추세장' },
+    { key: 'ranging',  label: '횡보장' },
+  ]
+
+  const toggleRegime = (key) => {
+    setStratAllowedRegimes(prev =>
+      prev.includes(key) ? prev.filter(r => r !== key) : [...prev, key]
+    )
+  }
 
   const inWatchlist = watchlist.some(w => w.sym === sym)
   const position    = positions.find(p => p.symbol === sym)
@@ -229,9 +243,11 @@ export default function StockDetail() {
     }
 
     try {
-      const res = await createStrategy({ name, symbol: sym, type: stratType, condition, action, account_mode: stratMode })
+      const allowed_regimes = stratAllowedRegimes.length > 0 ? stratAllowedRegimes : null
+      const res = await createStrategy({ name, symbol: sym, type: stratType, condition, action, account_mode: stratMode, allowed_regimes })
       setStrategies(prev => [...prev, res.strategy])
       setStratVal('')
+      setStratAllowedRegimes([])
       setShowForm(false)
       setStratMsg({ ok: true, text: '전략이 추가되었습니다.' })
     } catch (e) {
@@ -610,6 +626,24 @@ export default function StockDetail() {
                   </>
                 )}
 
+                {/* B: 허용 시장 국면 선택 (선택 안 하면 모든 국면에서 실행) */}
+                <div className="border border-gray-100 rounded-xl px-3 py-2 bg-gray-50">
+                  <p className="text-[10px] text-gray-400 mb-1.5">허용 시장 국면 <span className="text-gray-300">(미선택 시 전체)</span></p>
+                  <div className="flex gap-3 flex-wrap">
+                    {REGIME_OPTIONS.map(r => (
+                      <label key={r.key} className="flex items-center gap-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={stratAllowedRegimes.includes(r.key)}
+                          onChange={() => toggleRegime(r.key)}
+                          className="accent-accent"
+                        />
+                        <span className="text-xs text-gray-600">{r.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 <button type="submit"
                   className="w-full py-1.5 bg-accent text-white rounded-xl text-sm font-medium hover:bg-accent-dark transition-colors">
                   저장
@@ -631,7 +665,7 @@ export default function StockDetail() {
                   <div key={st.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
                     <div>
                       <div className="text-xs font-semibold text-gray-700">{st.name}</div>
-                      <div className="text-[11px] text-gray-400 flex items-center gap-1.5">
+                      <div className="text-[11px] text-gray-400 flex items-center gap-1.5 flex-wrap">
                         {STRATEGY_TYPES.find(t => t.value === st.type)?.label ?? st.type}
                         <span className={`px-1.5 py-0 rounded-full text-[10px] font-medium ${
                           st.account_mode === 'live'
@@ -640,6 +674,14 @@ export default function StockDetail() {
                         }`}>
                           {st.account_mode === 'live' ? 'Live' : 'Paper'}
                         </span>
+                        {st.allowed_regimes?.map(r => {
+                          const meta = { bearish: '하락', volatile: '변동', trending: '추세', ranging: '횡보' }
+                          return (
+                            <span key={r} className="px-1.5 py-0 rounded-full text-[10px] font-medium bg-purple-50 text-purple-500">
+                              {meta[r] ?? r}
+                            </span>
+                          )
+                        })}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
