@@ -26,6 +26,12 @@ const STATUS_FILTERS = [
   { key: 'skipped', label: '스킵' },
 ]
 
+const MODE_TABS = [
+  { key: '', label: '전체' },
+  { key: 'paper', label: 'Paper' },
+  { key: 'live', label: 'Live' },
+]
+
 const PAGE_SIZE = 50
 
 function formatTime(iso) {
@@ -39,17 +45,18 @@ export default function TradeHistory() {
   const [items, setItems] = useState([])
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
+  const [modeFilter, setModeFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [symbolFilter, setSymbolFilter] = useState('')
   const [symbolInput, setSymbolInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const load = useCallback(async (newOffset, newStatus, newSymbol) => {
+  const load = useCallback(async (newOffset, newMode, newStatus, newSymbol) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchTradeHistory({ limit: PAGE_SIZE, offset: newOffset, status: newStatus, symbol: newSymbol })
+      const data = await fetchTradeHistory({ limit: PAGE_SIZE, offset: newOffset, mode: newMode, status: newStatus, symbol: newSymbol })
       if (newOffset === 0) {
         setItems(data.items)
       } else {
@@ -65,8 +72,8 @@ export default function TradeHistory() {
   }, [])
 
   useEffect(() => {
-    load(0, statusFilter, symbolFilter)
-  }, [statusFilter, symbolFilter, load])
+    load(0, modeFilter, statusFilter, symbolFilter)
+  }, [modeFilter, statusFilter, symbolFilter, load])
 
   const handleStatusFilter = (key) => {
     setStatusFilter(key)
@@ -78,7 +85,7 @@ export default function TradeHistory() {
   }
 
   const handleLoadMore = () => {
-    load(offset + PAGE_SIZE, statusFilter, symbolFilter)
+    load(offset + PAGE_SIZE, modeFilter, statusFilter, symbolFilter)
   }
 
   return (
@@ -87,6 +94,27 @@ export default function TradeHistory() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-900">매매 이력</h2>
           <span className="text-sm text-gray-400">총 {total.toLocaleString()}건</span>
+        </div>
+
+        {/* Mode tabs */}
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-3 w-fit">
+          {MODE_TABS.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setModeFilter(t.key)}
+              className={`px-5 py-1.5 rounded-[9px] text-sm font-semibold transition-all ${
+                modeFilter === t.key
+                  ? t.key === 'live'
+                    ? 'bg-white text-red-500 shadow-sm'
+                    : t.key === 'paper'
+                    ? 'bg-white text-blue-500 shadow-sm'
+                    : 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         {/* Filters */}

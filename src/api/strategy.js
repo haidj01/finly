@@ -51,10 +51,11 @@ export async function deleteStrategy(sid) {
   return res.json()
 }
 
-export async function fetchTradeHistory({ limit = 50, offset = 0, status = '', symbol = '' } = {}) {
+export async function fetchTradeHistory({ limit = 50, offset = 0, status = '', symbol = '', mode = '' } = {}) {
   const params = new URLSearchParams({ limit, offset })
   if (status) params.set('status', status)
   if (symbol) params.set('symbol', symbol)
+  if (mode) params.set('mode', mode)
   const res = await apiFetch(`/api/strategy/trade-history?${params}`)
   if (!res.ok) throw new Error('Trade history fetch failed')
   return res.json()
