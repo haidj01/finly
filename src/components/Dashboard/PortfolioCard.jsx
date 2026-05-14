@@ -27,8 +27,9 @@ function timeAgo(iso) {
 }
 
 export default function PortfolioCard() {
-  const { alpacaAccount, positions, orders } = useStore()
+  const { alpacaAccount, positions, orders, tradingMode } = useStore()
   const { refresh } = useAlpacaRefresh()
+  const isLive = tradingMode === 'live'
 
   const equity    = alpacaAccount ? parseFloat(alpacaAccount.equity) : 0
   const lastEq    = alpacaAccount ? parseFloat(alpacaAccount.last_equity) : 0
@@ -45,7 +46,9 @@ export default function PortfolioCard() {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-base font-bold">Portfolio</h2>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-accent-light text-accent-dark">Alpaca Live</span>
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${isLive ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-accent-light text-accent-dark'}`}>
+            {isLive ? 'Alpaca Live' : 'Alpaca Paper'}
+          </span>
           <button
             onClick={refresh}
             className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-400 hover:border-accent hover:text-accent-dark transition-all"
@@ -58,7 +61,9 @@ export default function PortfolioCard() {
 
       {/* Hero */}
       <div className="bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl p-5 mb-4 text-white">
-        <div className="text-xs opacity-50 uppercase tracking-wide mb-1">Alpaca Paper · Total Equity</div>
+        <div className="text-xs opacity-50 uppercase tracking-wide mb-1">
+          {isLive ? 'Alpaca Live · Total Equity' : 'Alpaca Paper · Total Equity'}
+        </div>
         <div className="text-3xl font-bold tracking-tight mb-3">
           ${equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>

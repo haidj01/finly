@@ -55,6 +55,9 @@ export const useStore = create(
       })),
 
       // ── Alpaca ──────────────────────────────────────────────
+      tradingMode: null,   // 'paper' | 'live'
+      setTradingMode: (tradingMode) => set({ tradingMode }),
+
       alpacaAccount: null,
       setAlpacaAccount: (alpacaAccount) => set({ alpacaAccount }),
 
