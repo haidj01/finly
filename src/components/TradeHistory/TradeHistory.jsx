@@ -32,6 +32,12 @@ const MODE_TABS = [
   { key: 'live', label: 'Live' },
 ]
 
+const SOURCE_FILTERS = [
+  { key: '', label: '전략+워치독' },
+  { key: 'strategy', label: '전략' },
+  { key: 'watchdog', label: '워치독' },
+]
+
 const PAGE_SIZE = 50
 
 function formatTime(iso) {
@@ -46,17 +52,18 @@ export default function TradeHistory() {
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
   const [modeFilter, setModeFilter] = useState('')
+  const [sourceFilter, setSourceFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [symbolFilter, setSymbolFilter] = useState('')
   const [symbolInput, setSymbolInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const load = useCallback(async (newOffset, newMode, newStatus, newSymbol) => {
+  const load = useCallback(async (newOffset, newMode, newSource, newStatus, newSymbol) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchTradeHistory({ limit: PAGE_SIZE, offset: newOffset, mode: newMode, status: newStatus, symbol: newSymbol })
+      const data = await fetchTradeHistory({ limit: PAGE_SIZE, offset: newOffset, mode: newMode, source: newSource, status: newStatus, symbol: newSymbol })
       if (newOffset === 0) {
         setItems(data.items)
       } else {
@@ -72,8 +79,8 @@ export default function TradeHistory() {
   }, [])
 
   useEffect(() => {
-    load(0, modeFilter, statusFilter, symbolFilter)
-  }, [modeFilter, statusFilter, symbolFilter, load])
+    load(0, modeFilter, sourceFilter, statusFilter, symbolFilter)
+  }, [modeFilter, sourceFilter, statusFilter, symbolFilter, load])
 
   const handleStatusFilter = (key) => {
     setStatusFilter(key)
@@ -85,7 +92,7 @@ export default function TradeHistory() {
   }
 
   const handleLoadMore = () => {
-    load(offset + PAGE_SIZE, modeFilter, statusFilter, symbolFilter)
+    load(offset + PAGE_SIZE, modeFilter, sourceFilter, statusFilter, symbolFilter)
   }
 
   return (
@@ -119,6 +126,24 @@ export default function TradeHistory() {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+            {SOURCE_FILTERS.map(f => (
+              <button
+                key={f.key}
+                onClick={() => setSourceFilter(f.key)}
+                className={`px-4 py-1.5 rounded-[9px] text-sm font-medium transition-all ${
+                  sourceFilter === f.key
+                    ? f.key === 'watchdog'
+                      ? 'bg-white text-orange-500 shadow-sm'
+                      : 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
             {STATUS_FILTERS.map(f => (
               <button
