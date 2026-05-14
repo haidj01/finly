@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.12.0](https://github.com/haidj01/finly/compare/finly-v0.11.0...finly-v0.12.0) (2026-05-14)
+
+
+### Features
+
+* AI strategy recommendations in dashboard and stock detail ([d18f92f](https://github.com/haidj01/finly/commit/d18f92f66c68dff78ca260a57fb2b49dba837a2f))
+* global trading mode state — all account data reflects current mode ([5553375](https://github.com/haidj01/finly/commit/5553375bacc096ef388eb14a017ad49fd05ea240))
+* market regime UI + AI recommendations + global trading mode state ([b44d4ee](https://github.com/haidj01/finly/commit/b44d4ee82cfe23f2f552d5f90e912ea24f2143ec))
+
 ## [0.11.0](https://github.com/haidj01/finly/compare/finly-v0.10.0...finly-v0.11.0) (2026-05-14)
 
 
