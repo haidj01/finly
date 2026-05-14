@@ -3,8 +3,9 @@ import { useStore } from '../../store/useStore'
 import { useAlpacaRefresh } from '../../hooks/useAlpacaRefresh'
 
 export default function AlpacaAccount() {
-  const { alpacaAccount } = useStore()
+  const { alpacaAccount, tradingMode } = useStore()
   const { refresh } = useAlpacaRefresh()
+  const isLive = tradingMode === 'live'
 
   const equity = alpacaAccount ? parseFloat(alpacaAccount.equity) : 0
   const lastEq = alpacaAccount ? parseFloat(alpacaAccount.last_equity) : 0
@@ -27,8 +28,10 @@ export default function AlpacaAccount() {
         <div className="text-xs text-gray-400 py-2">로딩 중...</div>
       ) : (
         <>
-          <div className="bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl p-4 text-white mb-2">
-            <div className="text-xs opacity-50 uppercase tracking-wide mb-1">Paper Account Equity</div>
+          <div className={`bg-gradient-to-br rounded-xl p-4 text-white mb-2 ${isLive ? 'from-red-900 to-red-700' : 'from-gray-900 to-gray-700'}`}>
+            <div className="text-xs opacity-50 uppercase tracking-wide mb-1">
+              {isLive ? 'Live Account Equity' : 'Paper Account Equity'}
+            </div>
             <div className="text-2xl font-bold tracking-tight mb-2">
               ${equity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>

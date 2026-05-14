@@ -1,22 +1,15 @@
-import React, { useState, useEffect } from 'react'
-import { fetchTradingMode, setTradingMode } from '../../api/strategy'
+import React, { useState } from 'react'
+import { setTradingMode as apiSetTradingMode } from '../../api/strategy'
+import { fetchAccount, fetchPositions, fetchOrders } from '../../api/alpaca'
+import { useStore } from '../../store/useStore'
 
 export default function TradingModeSwitch() {
-  const [mode, setMode]       = useState(null)
+  const { tradingMode, setTradingMode, setAlpacaAccount, setPositions, setOrders } = useStore()
   const [loading, setLoading] = useState(false)
   const [confirm, setConfirm] = useState(false)
   const [error, setError]     = useState(null)
 
-  const load = async () => {
-    try {
-      const data = await fetchTradingMode()
-      setMode(data.mode)
-    } catch (e) {
-      setError(e.message)
-    }
-  }
-
-  useEffect(() => { load() }, [])
+  const mode = tradingMode
 
   const handleToggle = () => {
     if (mode === 'paper') {
@@ -31,8 +24,12 @@ export default function TradingModeSwitch() {
     setLoading(true)
     setError(null)
     try {
-      const data = await setTradingMode(target)
-      setMode(data.mode)
+      const data = await apiSetTradingMode(target)
+      setTradingMode(data.mode)
+      const [acct, pos, ord] = await Promise.all([fetchAccount(), fetchPositions(), fetchOrders()])
+      setAlpacaAccount(acct)
+      setPositions(pos)
+      setOrders(ord)
     } catch (e) {
       setError(e.message || '모드 변경 실패')
     }

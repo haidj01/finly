@@ -4,7 +4,7 @@ import {
 } from 'recharts'
 import { useStore } from '../../store/useStore'
 import { fetchSnapshot, fetchBars, fetchAsset, fetchNews, placeOrder } from '../../api/alpaca'
-import { fetchStrategies, createStrategy, toggleStrategy, deleteStrategy, fetchTradeHistory, fetchTradingMode } from '../../api/strategy'
+import { fetchStrategies, createStrategy, toggleStrategy, deleteStrategy, fetchTradeHistory, fetchTradingMode, fetchRegimeRecommendations } from '../../api/strategy'
 
 const STRATEGY_TYPES = [
   { value: 'stop_loss',     label: 'Stop Loss' },
@@ -78,6 +78,11 @@ export default function StockDetail() {
   const [stratBbPeriod, setStratBbPeriod]       = useState(20)
   const [stratBbMultiplier, setStratBbMultiplier] = useState(2.0)
   const [stratAllowedRegimes, setStratAllowedRegimes] = useState([])
+
+  // Recommendations
+  const [recData, setRecData]       = useState(null)
+  const [recLoading, setRecLoading] = useState(false)
+  const [recOpen, setRecOpen]       = useState(false)
   const [stratMsg, setStratMsg]                 = useState(null)
 
   const REGIME_OPTIONS = [
@@ -91,6 +96,47 @@ export default function StockDetail() {
     setStratAllowedRegimes(prev =>
       prev.includes(key) ? prev.filter(r => r !== key) : [...prev, key]
     )
+  }
+
+  const loadRecommendations = async (s) => {
+    if (!s) return
+    setRecLoading(true)
+    try {
+      setRecData(await fetchRegimeRecommendations(s))
+      setRecOpen(true)
+    } catch {}
+    finally { setRecLoading(false) }
+  }
+
+  const applyRecommendation = (rec) => {
+    setStratType(rec.type)
+    setStratAllowedRegimes(rec.allowed_regimes || [])
+    const c = rec.condition
+    const a = rec.action
+    if (rec.type === 'stop_loss')       setStratVal(String(c.drop_pct ?? ''))
+    else if (rec.type === 'take_profit') setStratVal(String(c.gain_pct ?? ''))
+    else if (rec.type === 'trailing_stop') setStratVal(String(c.trail_pct ?? ''))
+    else if (rec.type === 'price_target') {
+      setStratVal(String(c.target_price ?? ''))
+      setStratDir(c.direction || 'above')
+      setStratSide(a.side || 'buy')
+      setStratQty(a.qty || 1)
+    } else if (rec.type === 'rsi_threshold') {
+      setStratRsiPeriod(c.period || 14)
+      setStratVal(String(c.threshold ?? ''))
+      setStratDir(c.direction || 'below')
+      setStratQty(a.qty || 1)
+    } else if (rec.type === 'ma_cross') {
+      setStratMaFast(c.fast || 5)
+      setStratMaSlow(c.slow || 20)
+      setStratDir(c.direction || 'golden')
+    } else if (rec.type === 'bollinger_band') {
+      setStratBbPeriod(c.period || 20)
+      setStratBbMultiplier(c.multiplier || 2.0)
+      setStratDir(c.direction || 'below_lower')
+      setStratQty(a.qty || 1)
+    }
+    setShowForm(true)
   }
 
   const inWatchlist = watchlist.some(w => w.sym === sym)
@@ -488,13 +534,63 @@ export default function StockDetail() {
                   ))}
                 </div>
               </div>
-              <button
-                onClick={() => setShowForm(f => !f)}
-                className="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                {showForm ? '닫기' : '+ 추가'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => recData ? setRecOpen(o => !o) : loadRecommendations(sym)}
+                  disabled={recLoading}
+                  className="text-xs px-3 py-1 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-40"
+                >
+                  {recLoading ? '분석 중...' : recOpen ? '추천 닫기' : '✨ AI 추천'}
+                </button>
+                <button
+                  onClick={() => setShowForm(f => !f)}
+                  className="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  {showForm ? '닫기' : '+ 추가'}
+                </button>
+              </div>
             </div>
+
+            {/* AI 추천 패널 */}
+            {recOpen && recData && (
+              <div className="mb-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-gray-400">현재 국면: <span className="font-semibold text-gray-600">{recData.regime_label}</span></span>
+                  <button
+                    onClick={() => loadRecommendations(sym)}
+                    disabled={recLoading}
+                    className="text-[10px] text-gray-400 hover:text-accent transition-colors disabled:opacity-40"
+                  >
+                    ↻ 다시 분석
+                  </button>
+                </div>
+                {recData.recommendations.map((rec, i) => {
+                  const TYPE_LABEL = { stop_loss: 'Stop Loss', take_profit: 'Take Profit', trailing_stop: 'Trailing Stop', price_target: '목표가', rsi_threshold: 'RSI', ma_cross: 'MA 크로스', bollinger_band: 'Bollinger' }
+                  const TYPE_CLS   = { stop_loss: 'bg-red-50 text-red-500', take_profit: 'bg-green-50 text-green-600', trailing_stop: 'bg-orange-50 text-orange-500', price_target: 'bg-blue-50 text-blue-500', rsi_threshold: 'bg-purple-50 text-purple-500', ma_cross: 'bg-indigo-50 text-indigo-500', bollinger_band: 'bg-teal-50 text-teal-600' }
+                  return (
+                    <div key={i} className="border border-purple-100 rounded-xl p-3 bg-purple-50/30 flex items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[10px] font-semibold px-1.5 py-0 rounded-full ${TYPE_CLS[rec.type] || 'bg-gray-100 text-gray-500'}`}>
+                            {TYPE_LABEL[rec.type] || rec.type}
+                          </span>
+                          <span className="text-[10px] font-bold text-gray-600">{rec.symbol}</span>
+                        </div>
+                        <div className="text-xs font-semibold text-gray-700 mb-0.5">{rec.name}</div>
+                        <div className="text-[11px] text-gray-500 leading-relaxed">{rec.reason}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => applyRecommendation(rec)}
+                        className="flex-shrink-0 text-[11px] px-2.5 py-1 bg-white border border-purple-200 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors font-medium"
+                      >
+                        적용
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
 
             {showForm && (
               <form onSubmit={handleStratCreate} className="mb-4 space-y-2">
