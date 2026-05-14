@@ -26,7 +26,7 @@ const TABS = [
 ]
 
 export default function Header() {
-  const { view, setView, setSidebarOpen } = useStore()
+  const { view, setView, setSidebarOpen, tradingMode } = useStore()
   const marketOpen = useMarket()
   const versions = useVersions()
 
@@ -46,8 +46,19 @@ export default function Header() {
           </svg>
         </button>
 
-        <div className="text-xl font-bold tracking-tight">
-          Fin<span className="text-accent">ly</span>
+        <div className="flex items-center gap-2">
+          <div className="text-xl font-bold tracking-tight">
+            Fin<span className="text-accent">ly</span>
+          </div>
+          {tradingMode && (
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md tracking-wide ${
+              tradingMode === 'live'
+                ? 'bg-red-50 text-red-500 border border-red-200'
+                : 'bg-blue-50 text-blue-500 border border-blue-200'
+            }`}>
+              {tradingMode === 'live' ? 'LIVE' : 'PAPER'}
+            </span>
+          )}
         </div>
       </div>
 
