@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.12.1](https://github.com/haidj01/finly/compare/finly-v0.12.0...finly-v0.12.1) (2026-05-14)
+
+
+### Bug Fixes
+
+* clear AI recommendation state when switching stocks ([3c210a2](https://github.com/haidj01/finly/commit/3c210a2c013f5534513cf2fdbcb0a566c2369517))
+* decouple trading mode fetch from Alpaca account refresh ([b8a8b43](https://github.com/haidj01/finly/commit/b8a8b43706dabdbd1045b8cf992198015cd7de61))
+* decouple trading mode fetch so live-credential failure doesn't freeze the UI ([2974061](https://github.com/haidj01/finly/commit/29740614be7d5a31d545183e5df8dc393052c8cb))
+* 종목 변경 시 AI 추천 패널 초기화 버그 수정 ([00c19ec](https://github.com/haidj01/finly/commit/00c19eccd6f548144bdd04dfca23cc1b0c142fe8))
+
 ## [0.12.0](https://github.com/haidj01/finly/compare/finly-v0.11.0...finly-v0.12.0) (2026-05-14)
 
 
