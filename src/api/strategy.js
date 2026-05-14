@@ -51,6 +51,22 @@ export async function deleteStrategy(sid) {
   return res.json()
 }
 
+export async function fetchWatchdogStatus() {
+  const res = await apiFetch('/api/strategy/watchdog/status')
+  if (!res.ok) throw new Error('Watchdog status fetch failed')
+  return res.json()
+}
+
+export async function updateWatchdogConfig(config) {
+  const res = await apiFetch('/api/strategy/watchdog/config', {
+    method: 'POST',
+    body: JSON.stringify(config),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Watchdog config update failed')
+  return data
+}
+
 export async function fetchTradeHistory({ limit = 50, offset = 0, status = '', symbol = '', mode = '' } = {}) {
   const params = new URLSearchParams({ limit, offset })
   if (status) params.set('status', status)
