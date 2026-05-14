@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.0](https://github.com/haidj01/finly/compare/finly-v0.10.0...finly-v0.11.0) (2026-05-14)
+
+
+### Features
+
+* add allowed_regimes selector to strategy creation form ([bc56833](https://github.com/haidj01/finly/commit/bc568336fed583b3aa474a0006f7118996d07c99))
+* allowed_regimes selector in strategy form ([0098d7e](https://github.com/haidj01/finly/commit/0098d7eddaaf3c196be58b48885c446e94356439))
+
 ## [0.10.0](https://github.com/haidj01/finly/compare/finly-v0.9.0...finly-v0.10.0) (2026-05-14)
 
 
