@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { setTradingMode as apiSetTradingMode } from '../../api/strategy'
-import { fetchAccount, fetchPositions, fetchOrders } from '../../api/alpaca'
 import { useStore } from '../../store/useStore'
+import { useAlpacaRefresh } from '../../hooks/useAlpacaRefresh'
 
 export default function TradingModeSwitch() {
-  const { tradingMode, setTradingMode, setAlpacaAccount, setPositions, setOrders } = useStore()
+  const { tradingMode, setTradingMode } = useStore()
+  const { refresh } = useAlpacaRefresh()
   const [loading, setLoading] = useState(false)
   const [confirm, setConfirm] = useState(false)
   const [error, setError]     = useState(null)
@@ -26,13 +27,13 @@ export default function TradingModeSwitch() {
     try {
       const data = await apiSetTradingMode(target)
       setTradingMode(data.mode)
-      const [acct, pos, ord] = await Promise.all([fetchAccount(), fetchPositions(), fetchOrders()])
-      setAlpacaAccount(acct)
-      setPositions(pos)
-      setOrders(ord)
     } catch (e) {
       setError(e.message || '모드 변경 실패')
+      setLoading(false)
+      return
     }
+    // Refresh account/positions/orders after mode switch; errors are handled inside refresh()
+    await refresh()
     setLoading(false)
   }
 
