@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.1](https://github.com/haidj01/finly/compare/finly-v0.13.0...finly-v0.13.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* decouple account refresh from mode switch error state ([d1b85f1](https://github.com/haidj01/finly/commit/d1b85f151e4c8c5951a3c7e71973e0251ed03bab))
+* decouple account refresh from mode switch error state ([e8b5e00](https://github.com/haidj01/finly/commit/e8b5e002d4f97e8faec13f56e8181f9b64cb75be))
+
 ## [0.13.0](https://github.com/haidj01/finly/compare/finly-v0.12.1...finly-v0.13.0) (2026-05-14)
 
 
