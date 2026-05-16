@@ -5,10 +5,42 @@ import OrderModal from '../shared/OrderModal'
 import { apiFetch } from '../../api/client'
 
 const LOADING_MESSAGES = [
-  '시장 데이터 수집 중...',
+  '시장 국면 분석 중...',
+  '후보 종목 필터링 중...',
   'AI 분석 중...',
   '결과 정리 중...',
 ]
+
+const REGIME_CONFIG = {
+  bearish: {
+    label: '하락장',
+    badge: 'bg-red-50 text-red-500 border border-red-100',
+    banner: 'bg-red-50 border-red-100 text-red-600',
+    icon: '↓',
+    desc: '낙주(-1% 미만) 제외 · 방어적 pick 기준 적용',
+  },
+  volatile: {
+    label: '변동성장',
+    badge: 'bg-amber-50 text-amber-600 border border-amber-100',
+    banner: 'bg-amber-50 border-amber-100 text-amber-700',
+    icon: '⚡',
+    desc: '극단 변동(±7% 초과) 제외 · 보수적 기준 적용',
+  },
+  ranging: {
+    label: '횡보장',
+    badge: 'bg-gray-100 text-gray-500 border border-gray-200',
+    banner: 'bg-gray-50 border-gray-200 text-gray-500',
+    icon: '→',
+    desc: '전체 후보 대상 · 기본 기준 적용',
+  },
+  trending: {
+    label: '추세장',
+    badge: 'bg-green-50 text-green-600 border border-green-100',
+    banner: 'bg-green-50 border-green-100 text-green-700',
+    icon: '↑',
+    desc: '전체 후보 대상 · 모멘텀 종목 적극 pick',
+  },
+}
 
 async function fetchTrending() {
   const res = await apiFetch('/api/trending')
@@ -206,9 +238,16 @@ export default function Trending() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-lg font-bold">매수 추천 종목</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-bold">매수 추천 종목</h1>
+            {data?.regime && REGIME_CONFIG[data.regime] && (
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${REGIME_CONFIG[data.regime].badge}`}>
+                {REGIME_CONFIG[data.regime].icon} {REGIME_CONFIG[data.regime].label}
+              </span>
+            )}
+          </div>
           <p className="text-xs text-gray-400 mt-0.5">
-            Alpaca · Polygon 옵션 · SEC EDGAR · FMP 뉴스 + Claude AI
+            국면 기반 필터링 · Alpaca · Polygon · EDGAR · FMP + Claude AI
             {lastUpdated && ` · ${lastUpdated.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}`}
           </p>
         </div>
@@ -233,9 +272,10 @@ export default function Trending() {
         <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
           <div className="text-5xl">🔍</div>
           <div>
-            <div className="text-base font-bold text-gray-700 mb-1">매수 추천 종목 분석</div>
+            <div className="text-base font-bold text-gray-700 mb-1">국면 기반 매수 추천</div>
             <div className="text-sm text-gray-400">
-              오늘 시장에서 매수를 고려할 만한 종목을<br />Alpaca 데이터와 Claude AI로 선별합니다.
+              시장 국면(하락장 · 변동성 · 횡보 · 추세)을 먼저 파악하고<br />
+              국면에 맞는 후보 종목을 Claude AI로 선별합니다.
             </div>
           </div>
           <button
@@ -263,15 +303,24 @@ export default function Trending() {
         </div>
       )}
       {data && !loading && (
-        data.picks.length === 0 ? (
-          <div className="text-sm text-gray-400 py-10 text-center">
-            오늘 매수 추천 종목이 없습니다.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-            {data.picks.map(s => <StockCard key={s.sym} stock={s} onOrder={setOrder} />)}
-          </div>
-        )
+        <>
+          {data.regime && REGIME_CONFIG[data.regime] && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs mb-3 ${REGIME_CONFIG[data.regime].banner}`}>
+              <span className="font-bold">{REGIME_CONFIG[data.regime].icon} {REGIME_CONFIG[data.regime].label}</span>
+              <span className="opacity-40">·</span>
+              <span>{REGIME_CONFIG[data.regime].desc}</span>
+            </div>
+          )}
+          {data.picks.length === 0 ? (
+            <div className="text-sm text-gray-400 py-10 text-center">
+              오늘 매수 추천 종목이 없습니다.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              {data.picks.map(s => <StockCard key={s.sym} stock={s} onOrder={setOrder} />)}
+            </div>
+          )}
+        </>
       )}
 
       {order && <OrderModal order={order} onClose={() => setOrder(null)} />}
