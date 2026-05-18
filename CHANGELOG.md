@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.14.0](https://github.com/haidj01/finly/compare/finly-v0.13.1...finly-v0.14.0) (2026-05-18)
+
+
+### Features
+
+* **dashboard:** per-mode paper/live toggles for watchdog and strategy engine ([4d87169](https://github.com/haidj01/finly/commit/4d87169b0204129d3bddaaf86b4e45741d7c7762))
+* per-mode paper/live toggles for watchdog and strategy engine ([2492e27](https://github.com/haidj01/finly/commit/2492e27dcc0152a31597d0dbede120df516432f0))
+* reflect market regime in trending recommendation UI ([97d29e6](https://github.com/haidj01/finly/commit/97d29e6312889eae01bb1b349d6182f2198f4f88))
+* reflect market regime in trending UI ([2fe2bbe](https://github.com/haidj01/finly/commit/2fe2bbe0024a2e86d19400b8a9f725cc1e8287de))
+* **strategy:** show qty badge on registered strategy list items ([6b4d0c4](https://github.com/haidj01/finly/commit/6b4d0c4c645cabb77dfbc2e76130009489e3c8f9))
+* **strategy:** show qty badge on registered strategy list items ([685dbb7](https://github.com/haidj01/finly/commit/685dbb71ea9e66aace4875736fcee29b98ecc7b3))
+* **watchlist:** source watchlist from DB table ([36362c8](https://github.com/haidj01/finly/commit/36362c8c75808eec58da43a7b833601705c69047))
+* **watchlist:** source watchlist from DB table instead of hardcoded defaults ([588f295](https://github.com/haidj01/finly/commit/588f295e6850d84d895cef2e7325d2783fb189ac))
+
 ## [0.13.1](https://github.com/haidj01/finly/compare/finly-v0.13.0...finly-v0.13.1) (2026-05-15)
 
 
