@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { fetchRegimeRecommendations } from '../../api/strategy'
 
 const TYPE_LABEL = {
@@ -47,8 +47,6 @@ export default function RegimeRecommendCard() {
     }
   }
 
-  useEffect(() => { load() }, [])
-
   const regime = data?.regime || 'ranging'
   const regimeCls = REGIME_STYLE[regime] || REGIME_STYLE.ranging
 
@@ -71,6 +69,12 @@ export default function RegimeRecommendCard() {
           {loading ? '분석 중...' : '↻ 새로고침'}
         </button>
       </div>
+
+      {!data && !loading && !error && (
+        <div className="text-sm text-gray-400 text-center py-8">
+          새로고침을 눌러 현재 시장 국면 기반 전략 추천을 받으세요.
+        </div>
+      )}
 
       {loading && !data && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
