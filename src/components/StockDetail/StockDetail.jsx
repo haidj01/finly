@@ -245,7 +245,7 @@ export default function StockDetail() {
   async function handleOrder() {
     setOrderMsg(null)
     try {
-      await placeOrder({ symbol: sym, qty: orderQty, side: orderSide })
+      await placeOrder({ symbol: sym, qty: parseInt(orderQty), side: orderSide })
       setOrderMsg({ ok: true, text: `${orderSide === 'buy' ? '매수' : '매도'} 주문 완료` })
     } catch (e) {
       setOrderMsg({ ok: false, text: e.message })
@@ -490,17 +490,18 @@ export default function StockDetail() {
               <label className="text-xs text-gray-500 w-10">수량</label>
               <input
                 type="number"
-                min={1}
+                min={0}
                 max={10000}
                 value={orderQty}
-                onChange={e => setOrderQty(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={e => setOrderQty(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
               />
             </div>
 
             <button
               onClick={handleOrder}
-              className={`w-full py-2 rounded-xl text-sm font-semibold transition-colors ${
+              disabled={!orderQty || parseInt(orderQty) <= 0}
+              className={`w-full py-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                 orderSide === 'buy'
                   ? 'bg-accent text-white hover:bg-accent-dark'
                   : 'bg-red-500 text-white hover:bg-red-600'
