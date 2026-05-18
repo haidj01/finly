@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.15.0](https://github.com/haidj01/finly/compare/finly-v0.14.0...finly-v0.15.0) (2026-05-18)
+
+
+### Features
+
+* **dashboard:** AI 전략 추천 자동 로드 제거 - 사용자 요청 시에만 실행 ([52f27ce](https://github.com/haidj01/finly/commit/52f27ce6056f8c593ea4a2b38417c9875c70c376))
+* **dashboard:** disable auto-fetch on RegimeRecommendCard, load only on user action ([3564190](https://github.com/haidj01/finly/commit/35641904533440ae82ba2b49398dc6f88233d5a4))
+* **stock-detail:** show 52-week high/low and 20-day avg volume in price header ([b9b3303](https://github.com/haidj01/finly/commit/b9b3303af6612527132a13c34c98ed072691adf9))
+* **stock-detail:** show 52-week high/low and 20-day avg volume in price header ([de90f01](https://github.com/haidj01/finly/commit/de90f01b5ca7488b0bd429afbf180ce1af466605))
+
+
+### Bug Fixes
+
+* **stock-detail:** allow blank qty input and disable order button on 0 ([312a559](https://github.com/haidj01/finly/commit/312a559591a84846c5100f6660896bb1381e7f78))
+* **stock-detail:** allow blank qty input, disable order button on 0 ([e0f9c39](https://github.com/haidj01/finly/commit/e0f9c39eb32701241619e9778e1d9ec714ff75e2))
+
 ## [0.14.0](https://github.com/haidj01/finly/compare/finly-v0.13.1...finly-v0.14.0) (2026-05-18)
 
 
