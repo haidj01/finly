@@ -775,6 +775,9 @@ export default function StockDetail() {
                         }`}>
                           {st.account_mode === 'live' ? 'Live' : 'Paper'}
                         </span>
+                        <span className="px-1.5 py-0 rounded-full text-[10px] font-medium bg-gray-100 text-gray-500">
+                          {st.action?.qty_type === 'all' ? '전량' : `${st.action?.qty ?? '-'}주`}
+                        </span>
                         {st.allowed_regimes?.map(r => {
                           const meta = { bearish: '하락', volatile: '변동', trending: '추세', ranging: '횡보' }
                           return (
