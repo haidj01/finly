@@ -58,13 +58,17 @@ const NAV_TABS = [
 ]
 
 export default function App() {
-  const { view, setView, isAuthenticated, authStep, logout, sidebarOpen, setSidebarOpen } = useStore()
+  const { view, setView, isAuthenticated, authStep, logout, sidebarOpen, setSidebarOpen, loadWatchlist } = useStore()
 
   useEffect(() => {
     const handler = () => logout()
     window.addEventListener('finly:logout', handler)
     return () => window.removeEventListener('finly:logout', handler)
   }, [logout])
+
+  useEffect(() => {
+    if (isAuthenticated) loadWatchlist()
+  }, [isAuthenticated])
 
   if (!isAuthenticated) {
     return authStep === 'mfa' ? <MFAPage /> : <LoginPage />

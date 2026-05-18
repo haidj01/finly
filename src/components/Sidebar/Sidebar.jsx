@@ -57,12 +57,16 @@ export default function Sidebar({ onClose }) {
 
   const confirmAdd = async () => {
     if (!sym) return
-    const prices = await fetchLatestPrices([sym]).catch(() => ({}))
-    const price = prices[sym] || 0
-    addWatch({ sym, co: name || sym, price, chg: 0, up: true })
-    setShowModal(false)
-    setSym(''); setName(''); setResults([])
-    setSymStatus(''); setNameStatus('')
+    try {
+      const prices = await fetchLatestPrices([sym]).catch(() => ({}))
+      const price = prices[sym] || 0
+      await addWatch({ sym, co: name || sym, price, chg: 0, up: true })
+      setShowModal(false)
+      setSym(''); setName(''); setResults([])
+      setSymStatus(''); setNameStatus('')
+    } catch (e) {
+      setSymStatus(e.message || '추가 실패')
+    }
   }
 
   return (
