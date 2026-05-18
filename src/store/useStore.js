@@ -1,18 +1,9 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import { saveToken, clearToken, getToken } from '../api/client'
-
-const DEFAULT_WATCHLIST = [
-  { sym: 'AAPL', co: 'Apple',     price: 213.49, chg: 1.24,  up: true  },
-  { sym: 'NVDA', co: 'NVIDIA',    price: 875.32, chg: 3.87,  up: true  },
-  { sym: 'MSFT', co: 'Microsoft', price: 418.90, chg: -0.42, up: false },
-  { sym: 'TSLA', co: 'Tesla',     price: 172.15, chg: -2.31, up: false },
-  { sym: 'META', co: 'Meta',      price: 527.43, chg: 2.10,  up: true  },
-]
+import { fetchWatchlist, addWatchlistItem, removeWatchlistItem } from '../api/watchlist'
 
 export const useStore = create(
-  persist(
-    (set) => ({
+  (set) => ({
       // ── Auth ────────────────────────────────────────────────
       isAuthenticated: !!getToken(),
       authStep: 'login',   // 'login' | 'mfa'
@@ -25,7 +16,7 @@ export const useStore = create(
       },
       logout: () => {
         clearToken()
-        set({ isAuthenticated: false, authStep: 'login', tempToken: null })
+        set({ isAuthenticated: false, authStep: 'login', tempToken: null, watchlist: [] })
       },
 
       // ── View ────────────────────────────────────────────────
@@ -40,9 +31,35 @@ export const useStore = create(
       setSelectedSymbol: (sym) => set({ selectedSymbol: sym, view: 'stock' }),
 
       // ── Watchlist ───────────────────────────────────────────
-      watchlist: DEFAULT_WATCHLIST,
-      addWatch: (item) => set((s) => ({ watchlist: [...s.watchlist, item] })),
-      removeWatch: (sym) => set((s) => ({ watchlist: s.watchlist.filter(w => w.sym !== sym) })),
+      watchlist: [],
+      loadWatchlist: async () => {
+        try {
+          const items = await fetchWatchlist()
+          set({
+            watchlist: items.map(w => ({
+              sym: w.symbol,
+              co: w.company_name,
+              price: 0,
+              chg: 0,
+              up: true,
+            }))
+          })
+        } catch (e) {
+          console.error('watchlist 로드 실패:', e)
+        }
+      },
+      addWatch: async (item) => {
+        await addWatchlistItem(item.sym, item.co)
+        set(s => ({ watchlist: [...s.watchlist, item] }))
+      },
+      removeWatch: async (sym) => {
+        try {
+          await removeWatchlistItem(sym)
+          set(s => ({ watchlist: s.watchlist.filter(w => w.sym !== sym) }))
+        } catch (e) {
+          console.error('watchlist 삭제 실패:', e)
+        }
+      },
       updateWatchPrices: (prices) => set((s) => ({
         watchlist: s.watchlist.map(w =>
           prices[w.sym] ? {
@@ -71,10 +88,5 @@ export const useStore = create(
       chatHistory: [],
       addChatMsg: (msg) => set((s) => ({ chatHistory: [...s.chatHistory, msg] })),
       clearChat: () => set({ chatHistory: [] }),
-    }),
-    {
-      name: 'finly-store',
-      partialize: (state) => ({ watchlist: state.watchlist }),
-    }
-  )
+  })
 )
