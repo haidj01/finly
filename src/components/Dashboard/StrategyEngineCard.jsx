@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react'
-import { fetchWatchdogStatus, updateWatchdogConfig } from '../../api/strategy'
+import { fetchEngineStatus, updateEngineConfig } from '../../api/strategy'
 
 const MODE_LABEL = { paper: 'Paper', live: 'Live' }
 const MODE_COLOR = {
-  paper: { on: 'bg-blue-50 border-blue-200 text-blue-600', badge: 'bg-blue-50 text-blue-600 border border-blue-200', btn_off: 'bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100', btn_on: 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200' },
-  live:  { on: 'bg-orange-50 border-orange-200 text-orange-600', badge: 'bg-orange-50 text-orange-600 border border-orange-200', btn_off: 'bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100', btn_on: 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200' },
+  paper: { on: 'bg-blue-50 border-blue-200', badge: 'bg-blue-50 text-blue-600 border border-blue-200', btn_off: 'bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100', btn_on: 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200', text: 'text-blue-600' },
+  live:  { on: 'bg-green-50 border-green-200', badge: 'bg-green-50 text-green-600 border border-green-200', btn_off: 'bg-green-50 text-green-600 border border-green-200 hover:bg-green-100', btn_on: 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200', text: 'text-green-600' },
 }
 
-export default function WatchdogCard() {
-  const [config, setConfig]     = useState(null)
-  const [loading, setLoading]   = useState({})
-  const [error, setError]       = useState(null)
+export default function StrategyEngineCard() {
+  const [config, setConfig]   = useState(null)
+  const [loading, setLoading] = useState({})
+  const [error, setError]     = useState(null)
 
   const load = async () => {
     try {
-      const data = await fetchWatchdogStatus()
+      const data = await fetchEngineStatus()
       setConfig(data.config)
     } catch (e) {
       setError(e.message)
@@ -28,8 +28,7 @@ export default function WatchdogCard() {
     setLoading(l => ({ ...l, [mode]: true }))
     setError(null)
     try {
-      const modeConfig = config[mode]
-      const data = await updateWatchdogConfig(mode, { ...modeConfig, enabled: !modeConfig.enabled })
+      const data = await updateEngineConfig(mode, !config[mode].enabled)
       setConfig(data.config)
     } catch (e) {
       setError(e.message)
@@ -43,11 +42,11 @@ export default function WatchdogCard() {
   return (
     <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-base font-bold">워치독</h2>
+        <h2 className="text-base font-bold">전략 엔진</h2>
         {config && (
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
             anyOn
-              ? 'bg-orange-50 text-orange-600 border border-orange-200'
+              ? 'bg-green-50 text-green-600 border border-green-200'
               : 'bg-gray-100 text-gray-400 border border-gray-200'
           }`}>
             {anyOn ? '활성' : '비활성'}
@@ -66,27 +65,23 @@ export default function WatchdogCard() {
       {config && (
         <div className="space-y-3">
           {['paper', 'live'].map((mode) => {
-            const mc = config[mode] ?? { enabled: false, drop_pct: 5.0, max_sell_qty: 10 }
+            const mc = config[mode] ?? { enabled: true }
             const isOn = mc.enabled === true
             const colors = MODE_COLOR[mode]
             return (
               <div key={mode} className={`rounded-xl border p-3 ${isOn ? colors.on : 'bg-gray-50 border-gray-200'}`}>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{isOn ? (mode === 'paper' ? '🐕' : '🐕‍🦺') : '😴'}</span>
-                    <span className={`text-sm font-bold ${isOn ? '' : 'text-gray-400'}`}>
+                    <span className="text-lg">{isOn ? '⚙️' : '⏸️'}</span>
+                    <span className={`text-sm font-bold ${isOn ? colors.text : 'text-gray-400'}`}>
                       {MODE_LABEL[mode]}
                     </span>
                   </div>
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                     isOn ? colors.badge : 'bg-gray-100 text-gray-400 border border-gray-200'
                   }`}>
-                    {isOn ? '활성' : '비활성'}
+                    {isOn ? '실행 중' : '일시정지'}
                   </span>
-                </div>
-                <div className="text-xs text-gray-400 mb-2.5 flex gap-3">
-                  <span>손실 임계 <span className="font-semibold text-gray-600">{mc.drop_pct}%</span></span>
-                  <span>최대 <span className="font-semibold text-gray-600">{mc.max_sell_qty}주</span></span>
                 </div>
                 <button
                   onClick={() => toggle(mode)}
@@ -95,7 +90,7 @@ export default function WatchdogCard() {
                     isOn ? colors.btn_on : colors.btn_off
                   }`}
                 >
-                  {loading[mode] ? '처리 중...' : isOn ? '비활성화' : '활성화'}
+                  {loading[mode] ? '처리 중...' : isOn ? '일시정지' : '재개'}
                 </button>
               </div>
             )
