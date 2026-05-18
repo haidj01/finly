@@ -57,13 +57,29 @@ export async function fetchWatchdogStatus() {
   return res.json()
 }
 
-export async function updateWatchdogConfig(config) {
+export async function updateWatchdogConfig(mode, config) {
   const res = await apiFetch('/api/strategy/watchdog/config', {
     method: 'POST',
-    body: JSON.stringify(config),
+    body: JSON.stringify({ mode, ...config }),
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.detail || 'Watchdog config update failed')
+  return data
+}
+
+export async function fetchEngineStatus() {
+  const res = await apiFetch('/api/strategy/engine/status')
+  if (!res.ok) throw new Error('Engine status fetch failed')
+  return res.json()
+}
+
+export async function updateEngineConfig(mode, enabled) {
+  const res = await apiFetch('/api/strategy/engine/config', {
+    method: 'POST',
+    body: JSON.stringify({ mode, enabled }),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.detail || 'Engine config update failed')
   return data
 }
 
