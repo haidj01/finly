@@ -3,7 +3,7 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { useStore } from '../../store/useStore'
-import { fetchSnapshot, fetchBars, fetchAsset, fetchNews, placeOrder } from '../../api/alpaca'
+import { fetchSnapshot, fetchBars, fetchAsset, fetchNews, placeOrder, fetchStockStats } from '../../api/alpaca'
 import { fetchStrategies, createStrategy, toggleStrategy, deleteStrategy, fetchTradeHistory, fetchTradingMode, fetchRegimeRecommendations } from '../../api/strategy'
 
 const STRATEGY_TYPES = [
@@ -44,6 +44,7 @@ export default function StockDetail() {
   const [sym, setSym] = useState(selectedSymbol || '')
 
   const [snap, setSnap]       = useState(null)
+  const [stats, setStats]     = useState(null)
   const [bars, setBars]       = useState([])
   const [news, setNews]       = useState([])
   const [strategies, setStrategies] = useState([])
@@ -147,12 +148,14 @@ export default function StockDetail() {
     setLoading(true)
     setError(null)
     try {
-      const [snapData, newsData, histData] = await Promise.all([
+      const [snapData, newsData, histData, statsData] = await Promise.all([
         fetchSnapshot(s),
         fetchNews([s]).catch(() => []),
         fetchTradeHistory({ limit: 20, symbol: s }).catch(() => ({ items: [] })),
+        fetchStockStats(s).catch(() => null),
       ])
       setSnap(snapData)
+      setStats(statsData)
       const allNews = [
         ...(newsData?.alpaca?.items ?? []),
         ...(newsData?.google?.items ?? []),
@@ -394,6 +397,9 @@ export default function StockDetail() {
                     ['시가', db.o], ['고가', db.h], ['저가', db.l],
                     ['거래량', db.v ? db.v.toLocaleString() : '—', true],
                     ['전일 종가', prevClose],
+                    ['20일 평균거래량', stats?.avg_vol_20d ? stats.avg_vol_20d.toLocaleString() : '—', true],
+                    ['52주 고가', stats?.week52_high],
+                    ['52주 저가', stats?.week52_low],
                   ].map(([label, val, raw]) => (
                     <div key={label}>
                       <div className="text-[10px] text-gray-400 uppercase">{label}</div>
