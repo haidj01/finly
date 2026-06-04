@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.0](https://github.com/haidj01/finly/compare/finly-v0.16.1...finly-v0.17.0) (2026-06-04)
+
+
+### Features
+
+* merge Alpaca orders into stock detail trade history ([2637cb7](https://github.com/haidj01/finly/commit/2637cb711a9ae95d83b2cd963c605e7dee4df1cc))
+* **stock-detail:** merge Alpaca orders into trade history section ([70f6ce4](https://github.com/haidj01/finly/commit/70f6ce49138809bc0cc00b896a7039237d1a28ff))
+
 ## [0.16.1](https://github.com/haidj01/finly/compare/finly-v0.16.0...finly-v0.16.1) (2026-06-04)
 
 
