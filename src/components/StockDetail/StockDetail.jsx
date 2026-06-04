@@ -38,7 +38,7 @@ function fmtDate(iso, period) {
 }
 
 export default function StockDetail() {
-  const { selectedSymbol, setSelectedSymbol, watchlist, addWatch, removeWatch, positions } = useStore()
+  const { selectedSymbol, setSelectedSymbol, watchlist, addWatch, removeWatch, positions, tradingMode } = useStore()
 
   const [input, setInput] = useState(selectedSymbol || '')
   const [sym, setSym] = useState(selectedSymbol || '')
@@ -148,10 +148,9 @@ export default function StockDetail() {
     setLoading(true)
     setError(null)
     try {
-      const [snapData, newsData, histData, statsData] = await Promise.all([
+      const [snapData, newsData, statsData] = await Promise.all([
         fetchSnapshot(s),
         fetchNews([s]).catch(() => []),
-        fetchTradeHistory({ limit: 20, symbol: s }).catch(() => ({ items: [] })),
         fetchStockStats(s).catch(() => null),
       ])
       setSnap(snapData)
@@ -161,14 +160,21 @@ export default function StockDetail() {
         ...(newsData?.google?.items ?? []),
       ].sort((a, b) => (b.time > a.time ? 1 : -1)).slice(0, 5)
       setNews(allNews)
-      setTradeHistory(histData.items ?? [])
-      setTradeTotal(histData.total ?? 0)
-      setTradeOffset(histData.items?.length ?? 0)
     } catch (e) {
       setError(e.message)
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  const loadHistory = useCallback(async (s, mode) => {
+    if (!s) return
+    try {
+      const histData = await fetchTradeHistory({ limit: 20, symbol: s, mode: mode || '' })
+      setTradeHistory(histData.items ?? [])
+      setTradeTotal(histData.total ?? 0)
+      setTradeOffset(histData.items?.length ?? 0)
+    } catch {}
   }, [])
 
   const loadStrategies = useCallback(async (s, mode) => {
@@ -193,13 +199,13 @@ export default function StockDetail() {
     if (!sym || histLoading) return
     setHistLoading(true)
     try {
-      const data = await fetchTradeHistory({ limit: 20, offset: tradeOffset, symbol: sym })
+      const data = await fetchTradeHistory({ limit: 20, offset: tradeOffset, symbol: sym, mode: tradingMode || '' })
       setTradeHistory(prev => [...prev, ...(data.items ?? [])])
       setTradeTotal(data.total ?? 0)
       setTradeOffset(prev => prev + (data.items?.length ?? 0))
     } catch {}
     finally { setHistLoading(false) }
-  }, [sym, tradeOffset, histLoading])
+  }, [sym, tradeOffset, histLoading, tradingMode])
 
   useEffect(() => {
     fetchTradingMode().then(d => setStratMode(d.mode)).catch(() => {})
@@ -208,6 +214,10 @@ export default function StockDetail() {
   useEffect(() => {
     if (sym) load(sym)
   }, [sym, load])
+
+  useEffect(() => {
+    if (sym) loadHistory(sym, tradingMode)
+  }, [sym, tradingMode, loadHistory])
 
   useEffect(() => {
     if (sym) loadStrategies(sym, stratMode)
@@ -827,7 +837,18 @@ export default function StockDetail() {
           {/* ── Trade History ─────────────────────────────────── */}
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-full">
             <div className="flex items-center justify-between mb-3">
-              <div className="text-sm font-semibold text-gray-700">매매 이력</div>
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-semibold text-gray-700">매매 이력</div>
+                {tradingMode && (
+                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-medium ${
+                    tradingMode === 'live'
+                      ? 'bg-red-100 text-red-600'
+                      : 'bg-blue-100 text-blue-600'
+                  }`}>
+                    {tradingMode === 'live' ? '💰 Live' : '📄 Paper'}
+                  </span>
+                )}
+              </div>
               {tradeTotal > 0 && <span className="text-xs text-gray-400">총 {tradeTotal}건</span>}
             </div>
             {tradeHistory.length === 0 ? (
