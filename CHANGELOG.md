@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.16.1](https://github.com/haidj01/finly/compare/finly-v0.16.0...finly-v0.16.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* filter strategies by account_mode matching global trading mode ([284d592](https://github.com/haidj01/finly/commit/284d592ab506d3ba5c13e1c1a6161c5bfac5d5f6))
+* filter strategies by account_mode matching global trading mode ([589735e](https://github.com/haidj01/finly/commit/589735e43fa9a5a9e7896cd7ce7db7f22a9f960c))
+
 ## [0.16.0](https://github.com/haidj01/finly/compare/finly-v0.15.1...finly-v0.16.0) (2026-06-04)
 
 
