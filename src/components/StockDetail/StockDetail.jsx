@@ -4,7 +4,7 @@ import {
 } from 'recharts'
 import { useStore } from '../../store/useStore'
 import { fetchSnapshot, fetchBars, fetchAsset, fetchNews, placeOrder, fetchStockStats } from '../../api/alpaca'
-import { fetchStrategies, createStrategy, toggleStrategy, deleteStrategy, fetchTradeHistory, fetchTradingMode, fetchRegimeRecommendations } from '../../api/strategy'
+import { fetchStrategies, createStrategy, toggleStrategy, deleteStrategy, fetchTradeHistory, fetchRegimeRecommendations } from '../../api/strategy'
 
 const STRATEGY_TYPES = [
   { value: 'stop_loss',     label: 'Stop Loss' },
@@ -62,9 +62,6 @@ export default function StockDetail() {
   const [orderSide, setOrderSide] = useState('buy')
   const [orderQty, setOrderQty]   = useState(1)
   const [orderMsg, setOrderMsg]   = useState(null)
-
-  // Strategy mode tab
-  const [stratMode, setStratMode] = useState('paper')
 
   // Strategy form
   const [showForm, setShowForm]   = useState(false)
@@ -208,10 +205,6 @@ export default function StockDetail() {
   }, [sym, tradeOffset, histLoading, tradingMode])
 
   useEffect(() => {
-    fetchTradingMode().then(d => setStratMode(d.mode)).catch(() => {})
-  }, [])
-
-  useEffect(() => {
     if (sym) load(sym)
   }, [sym, load])
 
@@ -220,8 +213,8 @@ export default function StockDetail() {
   }, [sym, tradingMode, loadHistory])
 
   useEffect(() => {
-    if (sym) loadStrategies(sym, stratMode)
-  }, [sym, stratMode, loadStrategies])
+    if (sym) loadStrategies(sym, tradingMode)
+  }, [sym, tradingMode, loadStrategies])
 
   useEffect(() => {
     if (sym) loadBars(sym, period)
@@ -315,7 +308,7 @@ export default function StockDetail() {
 
     try {
       const allowed_regimes = stratAllowedRegimes.length > 0 ? stratAllowedRegimes : null
-      const res = await createStrategy({ name, symbol: sym, type: stratType, condition, action, account_mode: stratMode, allowed_regimes })
+      const res = await createStrategy({ name, symbol: sym, type: stratType, condition, action, account_mode: tradingMode, allowed_regimes })
       setStrategies(prev => [...prev, res.strategy])
       setStratVal('')
       setStratAllowedRegimes([])
@@ -545,23 +538,15 @@ export default function StockDetail() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="text-sm font-semibold text-gray-700">전략 설정</div>
-                <div className="flex gap-1">
-                  {['paper', 'live'].map(m => (
-                    <button
-                      key={m}
-                      onClick={() => { setStratMode(m); setShowForm(false) }}
-                      className={`text-[11px] px-2.5 py-0.5 rounded-full font-medium transition-colors ${
-                        stratMode === m
-                          ? m === 'live'
-                            ? 'bg-red-500 text-white'
-                            : 'bg-blue-500 text-white'
-                          : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                      }`}
-                    >
-                      {m === 'paper' ? '📄 Paper' : '💰 Live'}
-                    </button>
-                  ))}
-                </div>
+                {tradingMode && (
+                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-medium ${
+                    tradingMode === 'live'
+                      ? 'bg-red-100 text-red-600'
+                      : 'bg-blue-100 text-blue-600'
+                  }`}>
+                    {tradingMode === 'live' ? '💰 Live' : '📄 Paper'}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <button
