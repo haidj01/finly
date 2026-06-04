@@ -178,7 +178,7 @@ export default function StockDetail() {
     if (!s) return
     try {
       const data = await fetchStrategies(mode)
-      setStrategies(data.filter(st => st.symbol === s))
+      setStrategies(data.filter(st => st.symbol === s && (!mode || st.account_mode === mode)))
     } catch {}
   }, [])
 
