@@ -215,6 +215,13 @@ export default function StockDetail() {
   }, [sym, period, loadBars])
 
   useEffect(() => {
+    if (selectedSymbol && selectedSymbol !== sym) {
+      setInput(selectedSymbol)
+      setSym(selectedSymbol)
+    }
+  }, [selectedSymbol])
+
+  useEffect(() => {
     setRecData(null)
     setRecOpen(false)
   }, [sym])

@@ -30,6 +30,11 @@ export const useStore = create(
       selectedSymbol: null,
       setSelectedSymbol: (sym) => set({ selectedSymbol: sym, view: 'stock' }),
 
+      // ── Trade History navigation ──────────────────────────
+      historySymbol: null,
+      navigateToHistory: (sym) => set({ view: 'history', historySymbol: sym ?? null }),
+      clearHistorySymbol: () => set({ historySymbol: null }),
+
       // ── Watchlist ───────────────────────────────────────────
       watchlist: [],
       loadWatchlist: async () => {
