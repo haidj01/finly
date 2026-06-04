@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.15.1](https://github.com/haidj01/finly/compare/finly-v0.15.0...finly-v0.15.1) (2026-06-04)
+
+
+### Bug Fixes
+
+* **stock-detail:** sync displayed symbol when watchlist item is clicked ([bc838e2](https://github.com/haidj01/finly/commit/bc838e2e7488cb338b5c4978c00f015a32c30635))
+* **stock-detail:** sync symbol when watchlist item is clicked ([d64f5ff](https://github.com/haidj01/finly/commit/d64f5ffb6796bf57549f88a1b4993284f5481fe6))
+
 ## [0.15.0](https://github.com/haidj01/finly/compare/finly-v0.14.0...finly-v0.15.0) (2026-05-18)
 
 
