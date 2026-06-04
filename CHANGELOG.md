@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.16.0](https://github.com/haidj01/finly/compare/finly-v0.15.1...finly-v0.16.0) (2026-06-04)
+
+
+### Features
+
+* **stock-detail:** filter trade history by global trading mode ([68127a4](https://github.com/haidj01/finly/commit/68127a4066c897d0bbdeb8ca1118eaa840aca587))
+* **stock-detail:** filter trade history by global trading mode ([e064e3d](https://github.com/haidj01/finly/commit/e064e3d1b3220f51fb0901fb43cf5a7c9862cd59))
+
+
+### Bug Fixes
+
+* resolve merge conflict in StockDetail load function ([58e8bc3](https://github.com/haidj01/finly/commit/58e8bc394e39ffd10927bf6d4a832743caabb004))
+
 ## [0.15.1](https://github.com/haidj01/finly/compare/finly-v0.15.0...finly-v0.15.1) (2026-06-04)
 
 
