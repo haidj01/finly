@@ -38,7 +38,7 @@ function fmtDate(iso, period) {
 }
 
 export default function StockDetail() {
-  const { selectedSymbol, setSelectedSymbol, watchlist, addWatch, removeWatch, positions, tradingMode } = useStore()
+  const { selectedSymbol, setSelectedSymbol, watchlist, addWatch, removeWatch, positions, orders, tradingMode } = useStore()
 
   const [input, setInput] = useState(selectedSymbol || '')
   const [sym, setSym] = useState(selectedSymbol || '')
@@ -820,81 +820,151 @@ export default function StockDetail() {
           </div>
 
           {/* ── Trade History ─────────────────────────────────── */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-full">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="text-sm font-semibold text-gray-700">매매 이력</div>
-                {tradingMode && (
-                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-medium ${
-                    tradingMode === 'live'
-                      ? 'bg-red-100 text-red-600'
-                      : 'bg-blue-100 text-blue-600'
-                  }`}>
-                    {tradingMode === 'live' ? '💰 Live' : '📄 Paper'}
-                  </span>
+          {(() => {
+            const pad = n => String(n).padStart(2, '0')
+            const fmtTime = iso => {
+              if (!iso) return ''
+              const d = new Date(iso)
+              return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+            }
+
+            const SOURCE_META = {
+              watchdog: { label: 'Watchdog', cls: 'bg-orange-50 text-orange-500' },
+              agent:    { label: 'Agent',    cls: 'bg-purple-50 text-purple-600' },
+              manual:   { label: '수동',      cls: 'bg-gray-100 text-gray-500' },
+              strategy: { label: '전략',      cls: 'bg-blue-50 text-blue-500' },
+            }
+
+            const ALPACA_STATUS = {
+              filled:           { label: '체결완료', cls: 'bg-green-50 text-green-600' },
+              partially_filled: { label: '부분체결', cls: 'bg-yellow-50 text-yellow-600' },
+              new:              { label: '접수중',   cls: 'bg-blue-50 text-blue-500' },
+              pending_new:      { label: '접수대기', cls: 'bg-blue-50 text-blue-400' },
+              accepted:         { label: '수락됨',   cls: 'bg-blue-50 text-blue-400' },
+              held:             { label: '보류중',   cls: 'bg-yellow-50 text-yellow-500' },
+              canceled:         { label: '취소됨',   cls: 'bg-red-50 text-red-400' },
+              expired:          { label: '만료됨',   cls: 'bg-gray-100 text-gray-400' },
+              replaced:         { label: '수정됨',   cls: 'bg-gray-100 text-gray-400' },
+              done_for_day:     { label: '당일종료', cls: 'bg-gray-100 text-gray-500' },
+            }
+
+            const alpacaItems = orders
+              .filter(o => o.symbol === sym)
+              .map(o => ({
+                _type: 'alpaca',
+                id: `alpaca-${o.id}`,
+                side: o.side,
+                qty: parseFloat(o.filled_qty || 0) || parseFloat(o.qty || 0),
+                filledAvg: parseFloat(o.filled_avg_price || 0),
+                filledQty: parseFloat(o.filled_qty || 0),
+                orderedQty: parseFloat(o.qty || 0),
+                alpacaStatus: o.status,
+                time: o.filled_at || o.submitted_at,
+              }))
+
+            const finlyItems = tradeHistory.map(t => ({ ...t, _type: 'finly' }))
+
+            const merged = [...alpacaItems, ...finlyItems]
+              .sort((a, b) => new Date(b.time) - new Date(a.time))
+
+            const totalCount = tradeTotal + alpacaItems.length
+
+            return (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 col-span-full">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold text-gray-700">매매 이력</div>
+                    {tradingMode && (
+                      <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-medium ${
+                        tradingMode === 'live' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
+                      }`}>
+                        {tradingMode === 'live' ? '💰 Live' : '📄 Paper'}
+                      </span>
+                    )}
+                  </div>
+                  {totalCount > 0 && <span className="text-xs text-gray-400">총 {totalCount}건</span>}
+                </div>
+
+                {merged.length === 0 ? (
+                  <p className="text-xs text-gray-400">매매 이력 없음</p>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      {merged.map(item => {
+                        const isBuy = item.side === 'buy'
+                        const timeStr = fmtTime(item.time)
+
+                        if (item._type === 'alpaca') {
+                          const stInfo = ALPACA_STATUS[item.alpacaStatus] ?? { label: item.alpacaStatus, cls: 'bg-gray-100 text-gray-400' }
+                          const detail = item.filledQty > 0 && item.filledAvg > 0
+                            ? `$${item.filledAvg.toFixed(2)} × ${item.filledQty}주`
+                            : `${item.orderedQty}주`
+                          return (
+                            <div key={item.id} className="flex items-center justify-between bg-amber-50/60 border border-amber-100 rounded-xl px-3 py-2 text-sm">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className={`font-semibold flex-shrink-0 ${isBuy ? 'text-accent-dark' : 'text-red-500'}`}>
+                                  {isBuy ? '매수' : '매도'}
+                                </span>
+                                <span className="text-[10px] px-1.5 py-0 rounded-full font-medium flex-shrink-0 bg-amber-100 text-amber-700">
+                                  Alpaca
+                                </span>
+                                <span className="text-xs text-gray-400 truncate">{detail}</span>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                <span className="text-xs text-gray-400 font-mono hidden sm:inline">{timeStr}</span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${stInfo.cls}`}>
+                                  {stInfo.label}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        }
+
+                        const isExec = item.status === 'executed'
+                        const isFail = item.status === 'failed'
+                        const src = item.source || 'strategy'
+                        const srcMeta = SOURCE_META[src] ?? { label: src, cls: 'bg-gray-100 text-gray-400' }
+                        const label = item.strategy_name || (src === 'manual' ? '수동 주문' : src === 'agent' ? 'Agent 주문' : src === 'watchdog' ? 'Watchdog 주문' : '')
+                        return (
+                          <div key={item.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 text-sm">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className={`font-semibold flex-shrink-0 ${isBuy ? 'text-accent-dark' : 'text-red-500'}`}>
+                                {isBuy ? '매수' : '매도'}
+                              </span>
+                              {item.qty != null && <span className="text-gray-500 flex-shrink-0">{item.qty}주</span>}
+                              <span className={`text-[10px] px-1.5 py-0 rounded-full font-medium flex-shrink-0 ${srcMeta.cls}`}>
+                                {srcMeta.label}
+                              </span>
+                              {label && <span className="text-xs text-gray-400 truncate">{label}</span>}
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                              <span className="text-xs text-gray-400 font-mono hidden sm:inline">{timeStr}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                isExec ? 'bg-green-50 text-green-600' :
+                                isFail ? 'bg-red-50 text-red-500' :
+                                'bg-gray-100 text-gray-400'
+                              }`}>
+                                {isExec ? '체결' : isFail ? '실패' : '스킵'}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {tradeHistory.length < tradeTotal && (
+                      <button
+                        onClick={loadMoreHistory}
+                        disabled={histLoading}
+                        className="mt-3 w-full py-1.5 text-xs text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
+                      >
+                        {histLoading ? '불러오는 중...' : `더 보기 (${tradeTotal - tradeHistory.length}건 남음)`}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
-              {tradeTotal > 0 && <span className="text-xs text-gray-400">총 {tradeTotal}건</span>}
-            </div>
-            {tradeHistory.length === 0 ? (
-              <p className="text-xs text-gray-400">매매 이력 없음</p>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  {tradeHistory.map(item => {
-                    const isExec = item.status === 'executed'
-                    const isFail = item.status === 'failed'
-                    const isBuy  = item.side === 'buy'
-                    const d = new Date(item.time)
-                    const pad = n => String(n).padStart(2, '0')
-                    const timeStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
-                    const src = item.source || 'strategy'
-                    const SOURCE_META = {
-                      watchdog: { label: 'Watchdog', cls: 'bg-orange-50 text-orange-500' },
-                      agent:    { label: 'Agent',    cls: 'bg-purple-50 text-purple-600' },
-                      manual:   { label: '수동',      cls: 'bg-gray-100 text-gray-500' },
-                      strategy: { label: '전략',      cls: 'bg-blue-50 text-blue-500' },
-                    }
-                    const srcMeta = SOURCE_META[src] ?? { label: src, cls: 'bg-gray-100 text-gray-400' }
-                    const label = item.strategy_name || (src === 'manual' ? '수동 주문' : src === 'agent' ? 'Agent 주문' : src === 'watchdog' ? 'Watchdog 주문' : '')
-                    return (
-                      <div key={item.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 text-sm">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className={`font-semibold flex-shrink-0 ${isBuy ? 'text-accent-dark' : 'text-red-500'}`}>
-                            {isBuy ? '매수' : '매도'}
-                          </span>
-                          {item.qty != null && <span className="text-gray-500 flex-shrink-0">{item.qty}주</span>}
-                          <span className={`text-[10px] px-1.5 py-0 rounded-full font-medium flex-shrink-0 ${srcMeta.cls}`}>
-                            {srcMeta.label}
-                          </span>
-                          {label && <span className="text-xs text-gray-400 truncate">{label}</span>}
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                          <span className="text-xs text-gray-400 font-mono hidden sm:inline">{timeStr}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            isExec ? 'bg-green-50 text-green-600' :
-                            isFail ? 'bg-red-50 text-red-500' :
-                            'bg-gray-100 text-gray-400'
-                          }`}>
-                            {isExec ? '체결' : isFail ? '실패' : '스킵'}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-                {tradeHistory.length < tradeTotal && (
-                  <button
-                    onClick={loadMoreHistory}
-                    disabled={histLoading}
-                    className="mt-3 w-full py-1.5 text-xs text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-40"
-                  >
-                    {histLoading ? '불러오는 중...' : `더 보기 (${tradeTotal - tradeHistory.length}건 남음)`}
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+            )
+          })()}
 
           {/* ── News ──────────────────────────────────────────── */}
           {news.length > 0 && (
