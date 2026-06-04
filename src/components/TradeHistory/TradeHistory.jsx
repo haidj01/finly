@@ -1,10 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { fetchTradeHistory } from '../../api/strategy'
+import { useStore } from '../../store/useStore'
 
 const STATUS_META = {
   executed: { label: '체결', cls: 'bg-green-50 text-green-600' },
   failed:   { label: '실패', cls: 'bg-red-50 text-red-500' },
   skipped:  { label: '스킵', cls: 'bg-gray-100 text-gray-400' },
+}
+
+const ALPACA_STATUS_META = {
+  filled:           { label: '체결완료', cls: 'bg-green-50 text-green-600' },
+  partially_filled: { label: '부분체결', cls: 'bg-yellow-50 text-yellow-600' },
+  new:              { label: '접수중',   cls: 'bg-blue-50 text-blue-500' },
+  pending_new:      { label: '접수대기', cls: 'bg-blue-50 text-blue-400' },
+  accepted:         { label: '수락됨',   cls: 'bg-blue-50 text-blue-400' },
+  held:             { label: '보류중',   cls: 'bg-yellow-50 text-yellow-500' },
+  canceled:         { label: '취소됨',   cls: 'bg-red-50 text-red-400' },
+  expired:          { label: '만료됨',   cls: 'bg-gray-100 text-gray-400' },
+  replaced:         { label: '수정됨',   cls: 'bg-gray-100 text-gray-400' },
+  done_for_day:     { label: '당일종료', cls: 'bg-gray-100 text-gray-500' },
 }
 
 const TYPE_META = {
@@ -33,9 +47,10 @@ const MODE_TABS = [
 ]
 
 const SOURCE_FILTERS = [
-  { key: '', label: '전략+워치독' },
+  { key: '',         label: '전략+워치독' },
   { key: 'strategy', label: '전략' },
   { key: 'watchdog', label: '워치독' },
+  { key: 'alpaca',   label: 'Alpaca 주문' },
 ]
 
 const PAGE_SIZE = 50
@@ -48,6 +63,8 @@ function formatTime(iso) {
 }
 
 export default function TradeHistory() {
+  const { orders } = useStore()
+
   const [items, setItems] = useState([])
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
@@ -59,7 +76,10 @@ export default function TradeHistory() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  const isAlpacaMode = sourceFilter === 'alpaca'
+
   const load = useCallback(async (newOffset, newMode, newSource, newStatus, newSymbol) => {
+    if (newSource === 'alpaca') return
     setLoading(true)
     setError(null)
     try {
@@ -82,6 +102,12 @@ export default function TradeHistory() {
     load(0, modeFilter, sourceFilter, statusFilter, symbolFilter)
   }, [modeFilter, sourceFilter, statusFilter, symbolFilter, load])
 
+  const alpacaItems = isAlpacaMode
+    ? orders
+        .filter(o => !symbolFilter || o.symbol === symbolFilter)
+        .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
+    : []
+
   const handleStatusFilter = (key) => {
     setStatusFilter(key)
   }
@@ -100,29 +126,33 @@ export default function TradeHistory() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-900">매매 이력</h2>
-          <span className="text-sm text-gray-400">총 {total.toLocaleString()}건</span>
+          <span className="text-sm text-gray-400">
+            총 {isAlpacaMode ? alpacaItems.length.toLocaleString() : total.toLocaleString()}건
+          </span>
         </div>
 
-        {/* Mode tabs */}
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-3 w-fit">
-          {MODE_TABS.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setModeFilter(t.key)}
-              className={`px-5 py-1.5 rounded-[9px] text-sm font-semibold transition-all ${
-                modeFilter === t.key
-                  ? t.key === 'live'
-                    ? 'bg-white text-red-500 shadow-sm'
-                    : t.key === 'paper'
-                    ? 'bg-white text-blue-500 shadow-sm'
-                    : 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {/* Mode tabs — Alpaca 모드에서는 비활성화 */}
+        {!isAlpacaMode && (
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-xl mb-3 w-fit">
+            {MODE_TABS.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setModeFilter(t.key)}
+                className={`px-5 py-1.5 rounded-[9px] text-sm font-semibold transition-all ${
+                  modeFilter === t.key
+                    ? t.key === 'live'
+                      ? 'bg-white text-red-500 shadow-sm'
+                      : t.key === 'paper'
+                      ? 'bg-white text-blue-500 shadow-sm'
+                      : 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -135,6 +165,8 @@ export default function TradeHistory() {
                   sourceFilter === f.key
                     ? f.key === 'watchdog'
                       ? 'bg-white text-orange-500 shadow-sm'
+                      : f.key === 'alpaca'
+                      ? 'bg-white text-amber-600 shadow-sm'
                       : 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-400 hover:text-gray-600'
                 }`}
@@ -144,19 +176,21 @@ export default function TradeHistory() {
             ))}
           </div>
 
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-            {STATUS_FILTERS.map(f => (
-              <button
-                key={f.key}
-                onClick={() => handleStatusFilter(f.key)}
-                className={`px-4 py-1.5 rounded-[9px] text-sm font-medium transition-all ${
-                  statusFilter === f.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          {!isAlpacaMode && (
+            <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+              {STATUS_FILTERS.map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => handleStatusFilter(f.key)}
+                  className={`px-4 py-1.5 rounded-[9px] text-sm font-medium transition-all ${
+                    statusFilter === f.key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <form onSubmit={handleSymbolSearch} className="flex gap-2">
             <input
@@ -186,104 +220,185 @@ export default function TradeHistory() {
 
         {/* Table */}
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-          {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50 text-xs text-gray-400 uppercase tracking-wide">
-                  <th className="text-left px-4 py-3">시간</th>
-                  <th className="text-left px-4 py-3">종목</th>
-                  <th className="text-left px-4 py-3">전략</th>
-                  <th className="text-left px-4 py-3">타입</th>
-                  <th className="text-left px-4 py-3">구분</th>
-                  <th className="text-right px-4 py-3">수량</th>
-                  <th className="text-left px-4 py-3">상태</th>
-                  <th className="text-left px-4 py-3">사유</th>
-                </tr>
-              </thead>
-              <tbody>
+          {isAlpacaMode ? (
+            <>
+              {/* Alpaca orders — Desktop */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-amber-50 text-xs text-gray-400 uppercase tracking-wide">
+                      <th className="text-left px-4 py-3">접수 시간</th>
+                      <th className="text-left px-4 py-3">종목</th>
+                      <th className="text-left px-4 py-3">구분</th>
+                      <th className="text-right px-4 py-3">주문 수량</th>
+                      <th className="text-right px-4 py-3">체결 수량</th>
+                      <th className="text-right px-4 py-3">체결 평균가</th>
+                      <th className="text-right px-4 py-3">체결 금액</th>
+                      <th className="text-left px-4 py-3">상태</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {alpacaItems.map(o => {
+                      const sideMeta   = SIDE_META[o.side] || { label: o.side, cls: 'text-gray-500' }
+                      const statusMeta = ALPACA_STATUS_META[o.status] || { label: o.status, cls: 'bg-gray-100 text-gray-400' }
+                      const filledQty  = parseFloat(o.filled_qty || 0)
+                      const filledAvg  = parseFloat(o.filled_avg_price || 0)
+                      const orderedQty = parseFloat(o.qty || 0)
+                      const total      = filledQty * filledAvg
+                      return (
+                        <tr key={o.id} className="border-b border-gray-50 hover:bg-amber-50/40 transition-colors">
+                          <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap font-mono">{formatTime(o.submitted_at)}</td>
+                          <td className="px-4 py-3 font-bold text-gray-900">{o.symbol}</td>
+                          <td className={`px-4 py-3 ${sideMeta.cls}`}>{sideMeta.label}</td>
+                          <td className="px-4 py-3 text-right text-gray-700">{orderedQty}</td>
+                          <td className="px-4 py-3 text-right text-gray-700">{filledQty || '-'}</td>
+                          <td className="px-4 py-3 text-right text-gray-700">{filledAvg ? `$${filledAvg.toFixed(2)}` : '-'}</td>
+                          <td className="px-4 py-3 text-right text-gray-700">{total > 0 ? `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '-'}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusMeta.cls}`}>
+                              {statusMeta.label}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {/* Alpaca orders — Mobile */}
+              <div className="md:hidden divide-y divide-gray-50">
+                {alpacaItems.map(o => {
+                  const sideMeta   = SIDE_META[o.side] || { label: o.side, cls: 'text-gray-500' }
+                  const statusMeta = ALPACA_STATUS_META[o.status] || { label: o.status, cls: 'bg-gray-100 text-gray-400' }
+                  const filledQty  = parseFloat(o.filled_qty || 0)
+                  const filledAvg  = parseFloat(o.filled_avg_price || 0)
+                  const total      = filledQty * filledAvg
+                  return (
+                    <div key={o.id} className="px-4 py-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-900">{o.symbol}</span>
+                          <span className={`text-sm ${sideMeta.cls}`}>{sideMeta.label}</span>
+                          <span className="text-sm text-gray-500">{parseFloat(o.qty || 0)}주</span>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusMeta.cls}`}>
+                          {statusMeta.label}
+                        </span>
+                      </div>
+                      {filledQty > 0 && filledAvg > 0 && (
+                        <div className="text-xs text-gray-500 mb-1">
+                          체결 {filledQty}주 · ${filledAvg.toFixed(2)} · 합계 ${total.toFixed(2)}
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-400 font-mono">{formatTime(o.submitted_at)}</div>
+                    </div>
+                  )
+                })}
+              </div>
+              {alpacaItems.length === 0 && (
+                <div className="text-center py-16 text-gray-400 text-sm">Alpaca 주문 내역이 없습니다.</div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Finly trade history — Desktop */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50 text-xs text-gray-400 uppercase tracking-wide">
+                      <th className="text-left px-4 py-3">시간</th>
+                      <th className="text-left px-4 py-3">종목</th>
+                      <th className="text-left px-4 py-3">전략</th>
+                      <th className="text-left px-4 py-3">타입</th>
+                      <th className="text-left px-4 py-3">구분</th>
+                      <th className="text-right px-4 py-3">수량</th>
+                      <th className="text-left px-4 py-3">상태</th>
+                      <th className="text-left px-4 py-3">사유</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map(item => {
+                      const statusMeta = STATUS_META[item.status] || { label: item.status, cls: 'bg-gray-100 text-gray-500' }
+                      const typeMeta = TYPE_META[item.strategy_type] || { label: item.strategy_type || '-', cls: 'bg-gray-100 text-gray-400' }
+                      const sideMeta = SIDE_META[item.side] || { label: item.side, cls: 'text-gray-500' }
+                      return (
+                        <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap font-mono">{formatTime(item.time)}</td>
+                          <td className="px-4 py-3 font-bold text-gray-900">{item.symbol}</td>
+                          <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate">{item.strategy_name || '-'}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${typeMeta.cls}`}>
+                              {typeMeta.label}
+                            </span>
+                          </td>
+                          <td className={`px-4 py-3 ${sideMeta.cls}`}>{sideMeta.label}</td>
+                          <td className="px-4 py-3 text-right text-gray-700">{item.qty ?? '-'}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusMeta.cls}`}>
+                              {statusMeta.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 text-xs max-w-[200px] truncate" title={item.error || item.reason}>
+                            {item.error ? (
+                              <span className="text-red-400">{item.error}</span>
+                            ) : (
+                              item.reason || '-'
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {/* Finly trade history — Mobile */}
+              <div className="md:hidden divide-y divide-gray-50">
                 {items.map(item => {
                   const statusMeta = STATUS_META[item.status] || { label: item.status, cls: 'bg-gray-100 text-gray-500' }
                   const typeMeta = TYPE_META[item.strategy_type] || { label: item.strategy_type || '-', cls: 'bg-gray-100 text-gray-400' }
                   const sideMeta = SIDE_META[item.side] || { label: item.side, cls: 'text-gray-500' }
                   return (
-                    <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap font-mono">{formatTime(item.time)}</td>
-                      <td className="px-4 py-3 font-bold text-gray-900">{item.symbol}</td>
-                      <td className="px-4 py-3 text-gray-600 max-w-[120px] truncate">{item.strategy_name || '-'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${typeMeta.cls}`}>
-                          {typeMeta.label}
-                        </span>
-                      </td>
-                      <td className={`px-4 py-3 ${sideMeta.cls}`}>{sideMeta.label}</td>
-                      <td className="px-4 py-3 text-right text-gray-700">{item.qty ?? '-'}</td>
-                      <td className="px-4 py-3">
+                    <div key={item.id} className="px-4 py-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-gray-900">{item.symbol}</span>
+                          <span className={`text-sm ${sideMeta.cls}`}>{sideMeta.label}</span>
+                          {item.qty && <span className="text-sm text-gray-500">{item.qty}주</span>}
+                        </div>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusMeta.cls}`}>
                           {statusMeta.label}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs max-w-[200px] truncate" title={item.error || item.reason}>
-                        {item.error ? (
-                          <span className="text-red-400">{item.error}</span>
-                        ) : (
-                          item.reason || '-'
-                        )}
-                      </td>
-                    </tr>
+                      </div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${typeMeta.cls}`}>{typeMeta.label}</span>
+                        <span className="text-xs text-gray-500">{item.strategy_name || '-'}</span>
+                      </div>
+                      <div className="text-xs text-gray-400 font-mono">{formatTime(item.time)}</div>
+                      {(item.error || item.reason) && (
+                        <div className={`text-xs mt-1 ${item.error ? 'text-red-400' : 'text-gray-400'}`}>
+                          {item.error || item.reason}
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile cards */}
-          <div className="md:hidden divide-y divide-gray-50">
-            {items.map(item => {
-              const statusMeta = STATUS_META[item.status] || { label: item.status, cls: 'bg-gray-100 text-gray-500' }
-              const typeMeta = TYPE_META[item.strategy_type] || { label: item.strategy_type || '-', cls: 'bg-gray-100 text-gray-400' }
-              const sideMeta = SIDE_META[item.side] || { label: item.side, cls: 'text-gray-500' }
-              return (
-                <div key={item.id} className="px-4 py-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-gray-900">{item.symbol}</span>
-                      <span className={`text-sm ${sideMeta.cls}`}>{sideMeta.label}</span>
-                      {item.qty && <span className="text-sm text-gray-500">{item.qty}주</span>}
-                    </div>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusMeta.cls}`}>
-                      {statusMeta.label}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${typeMeta.cls}`}>{typeMeta.label}</span>
-                    <span className="text-xs text-gray-500">{item.strategy_name || '-'}</span>
-                  </div>
-                  <div className="text-xs text-gray-400 font-mono">{formatTime(item.time)}</div>
-                  {(item.error || item.reason) && (
-                    <div className={`text-xs mt-1 ${item.error ? 'text-red-400' : 'text-gray-400'}`}>
-                      {item.error || item.reason}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Empty / loading / error */}
-          {!loading && !error && items.length === 0 && (
-            <div className="text-center py-16 text-gray-400 text-sm">매매 이력이 없습니다.</div>
-          )}
-          {error && (
-            <div className="text-center py-16 text-red-400 text-sm">{error}</div>
-          )}
-          {loading && items.length === 0 && (
-            <div className="text-center py-16 text-gray-400 text-sm">불러오는 중...</div>
+              </div>
+              {/* Empty / loading / error */}
+              {!loading && !error && items.length === 0 && (
+                <div className="text-center py-16 text-gray-400 text-sm">매매 이력이 없습니다.</div>
+              )}
+              {error && (
+                <div className="text-center py-16 text-red-400 text-sm">{error}</div>
+              )}
+              {loading && items.length === 0 && (
+                <div className="text-center py-16 text-gray-400 text-sm">불러오는 중...</div>
+              )}
+            </>
           )}
         </div>
 
-        {/* Load more */}
-        {items.length < total && (
+        {/* Load more — finly history only */}
+        {!isAlpacaMode && items.length < total && (
           <div className="mt-4 text-center">
             <button
               onClick={handleLoadMore}
