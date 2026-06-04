@@ -848,6 +848,15 @@ export default function StockDetail() {
                     const d = new Date(item.time)
                     const pad = n => String(n).padStart(2, '0')
                     const timeStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+                    const src = item.source || 'strategy'
+                    const SOURCE_META = {
+                      watchdog: { label: 'Watchdog', cls: 'bg-orange-50 text-orange-500' },
+                      agent:    { label: 'Agent',    cls: 'bg-purple-50 text-purple-600' },
+                      manual:   { label: '수동',      cls: 'bg-gray-100 text-gray-500' },
+                      strategy: { label: '전략',      cls: 'bg-blue-50 text-blue-500' },
+                    }
+                    const srcMeta = SOURCE_META[src] ?? { label: src, cls: 'bg-gray-100 text-gray-400' }
+                    const label = item.strategy_name || (src === 'manual' ? '수동 주문' : src === 'agent' ? 'Agent 주문' : src === 'watchdog' ? 'Watchdog 주문' : '')
                     return (
                       <div key={item.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 text-sm">
                         <div className="flex items-center gap-2 min-w-0">
@@ -855,7 +864,10 @@ export default function StockDetail() {
                             {isBuy ? '매수' : '매도'}
                           </span>
                           {item.qty != null && <span className="text-gray-500 flex-shrink-0">{item.qty}주</span>}
-                          <span className="text-xs text-gray-400 truncate">{item.strategy_name}</span>
+                          <span className={`text-[10px] px-1.5 py-0 rounded-full font-medium flex-shrink-0 ${srcMeta.cls}`}>
+                            {srcMeta.label}
+                          </span>
+                          {label && <span className="text-xs text-gray-400 truncate">{label}</span>}
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                           <span className="text-xs text-gray-400 font-mono hidden sm:inline">{timeStr}</span>
