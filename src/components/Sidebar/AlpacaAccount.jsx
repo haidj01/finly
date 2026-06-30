@@ -53,11 +53,11 @@ export default function AlpacaAccount() {
           <div className="grid grid-cols-2 gap-1.5">
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5">
               <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">Cash</div>
-              <div className="text-sm font-bold">${(cash / 1000).toFixed(1)}K</div>
+              <div className="text-sm font-bold">${cash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             </div>
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5">
               <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">구매력</div>
-              <div className="text-sm font-bold">${(buyPow / 1000).toFixed(1)}K</div>
+              <div className="text-sm font-bold">${buyPow.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             </div>
           </div>
         </>
