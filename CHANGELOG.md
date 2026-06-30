@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.17.1](https://github.com/haidj01/finly/compare/finly-v0.17.0...finly-v0.17.1) (2026-06-30)
+
+
+### Bug Fixes
+
+* **sidebar:** show exact cash and buying power balance ([83a5ced](https://github.com/haidj01/finly/commit/83a5ceddbca29e3a25a8f8758596c9fbb9119409))
+* **sidebar:** show exact cash and buying power instead of K-formatted values ([d149bb5](https://github.com/haidj01/finly/commit/d149bb519bb2e47fc1413993db93c8cf531ff9bf))
+
 ## [0.17.0](https://github.com/haidj01/finly/compare/finly-v0.16.1...finly-v0.17.0) (2026-06-04)
 
 
